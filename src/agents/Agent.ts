@@ -41,6 +41,7 @@ export default class Agent {
   public memory: ShortTurnMemory
   public skillManager: SkillManager
   public toolsManager: ToolsManager
+  private _ready: boolean = false
   public currentSkill?: SkillMeta
 
   constructor(options: AgentOptions) {
@@ -57,6 +58,7 @@ export default class Agent {
 
   // 初始化系统
   private init() {
+    if (this._ready) return
     const systemPrompt = this.buildSystemPrompt()
 
     this.memory.addMessages([
@@ -66,6 +68,8 @@ export default class Agent {
         timestamp: Date.now(),
       },
     ])
+
+    this._ready = true
   }
 
   /**

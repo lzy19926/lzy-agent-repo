@@ -6,12 +6,15 @@ import {
 } from "./tools/PowerShellTool"
 import { BashTool, BashToolDefinition } from "./tools/BashTool"
 import { WebSearchTool, WebSearchToolDefinition } from "./tools/WebSearchTool"
+import { SendMessageTool, SendMessageToolDefinition } from "./tools/SendMessageTool"
 import ToolsManager from "./core/ToolsManager"
-import AgentManager from "./core/AgentManager"
 import TerminalUI from "./terminal/TerminalUI"
 import CommandExecuter from "./terminal/CommandExecuter"
 import type { Model } from "./types/types"
 import Agent from "./agents/Agent"
+
+// Agent管理 - 管理多Agent实例，共享核心依赖（单例模式）
+import agentManager from "./core/AgentManager"
 
 // ========================
 // 1. 核心配置
@@ -37,6 +40,7 @@ const toolsManager = new ToolsManager()
   .register(PowerShellTool, PowerShellToolDefinition)
   .register(BashTool, BashToolDefinition)
   .register(WebSearchTool, WebSearchToolDefinition)
+  .register(SendMessageTool, SendMessageToolDefinition)
 
 // 默认模型配置 - 请根据实际使用的大模型参数修改
 const DEFAULT_MODEL: Model = {
@@ -44,9 +48,6 @@ const DEFAULT_MODEL: Model = {
   apiKey: "beb5cb1b-b298-486f-9b7a-3e0a3e0a68ee",
   baseURL: "https://ark.cn-beijing.volces.com/api/v3",
 }
-
-// Agent管理 - 管理多Agent实例，共享核心依赖
-const agentManager = new AgentManager()
 
 agentManager.registerAgent(
   new Agent({

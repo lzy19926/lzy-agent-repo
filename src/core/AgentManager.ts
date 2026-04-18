@@ -2,15 +2,23 @@ import type Agent from "../agents/Agent"
 import eventBus from "../bus/EventBus"
 import commandBus from "../bus/CommandBus"
 
-export default class AgentManager {
+class AgentManager {
+  private static instance: AgentManager
   private agents: Map<string, Agent>
   public currentAgent: Agent | null
 
-  constructor() {
+  private constructor() {
     this.agents = new Map()
     this.currentAgent = null
     this.subscribeAllEvents()
     this.registerAllCommands()
+  }
+
+  public static getInstance(): AgentManager {
+    if (!AgentManager.instance) {
+      AgentManager.instance = new AgentManager()
+    }
+    return AgentManager.instance
   }
 
   // ========================
@@ -99,6 +107,11 @@ export default class AgentManager {
     return this.currentAgent
   }
 
+  // 获取指定名称的Agent
+  getAgent(name: string): Agent | undefined {
+    return this.agents.get(name)
+  }
+
   // 切换Agent
   switchAgent(name: string): Agent {
     const agent = this.agents.get(name)
@@ -109,3 +122,8 @@ export default class AgentManager {
     return agent
   }
 }
+
+/**
+ * 全局单例 Agent管理器
+ * */
+export default AgentManager.getInstance()

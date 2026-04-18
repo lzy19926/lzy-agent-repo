@@ -2,7 +2,7 @@
  * Minimal agent loop implementation
  */
 import type { AgentLoopConfig, Context, Message } from "../types/types"
-import { callLLM } from "./chat"
+import { callLLM } from "./Chat"
 /**
  * Start a minimal agent loop
  */
