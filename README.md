@@ -83,8 +83,13 @@ toolsManager.register(YourTool, YourToolDefinition)
 ## 📁 项目结构
 
 ```
+├── .lzyAgentCli/         # 脚手架缓存
+│   └── memory            # 记忆文件存储目录（自动生成）
+│   └── skills            # 项目内置skills
+│
 ├── bin/                  # 命令行入口
 │   └── agent.js
+│
 ├── src/
 │   ├── agents/           # Agent实现目录
 │   │   ├── Agent.ts      # 基础Agent类
@@ -106,7 +111,7 @@ toolsManager.register(YourTool, YourToolDefinition)
 │   ├── utils/            # 工具函数
 │   ├── bus/              # 事件总线（可选）
 │   └── index.ts          # 程序主入口
-├── memory/               # 记忆文件存储目录（自动生成）
+
 ├── dist/                 # TypeScript编译输出目录（自动生成）
 ├── package.json
 └── tsconfig.json
@@ -129,7 +134,7 @@ const memory = new ShortTurnMemory({
 ```typescript
 const skillManager = new SkillManager({
   scanDirs: [
-    "./src/skills", // 项目内置技能
+    "./.lzyAgentCli/skills", // 项目内置技能
     "/path/to/global/skills", // 全局技能目录
     "/path/to/plugin/skills" // 插件技能目录
   ]
