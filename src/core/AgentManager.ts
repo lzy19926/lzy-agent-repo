@@ -1,4 +1,6 @@
 import type Agent from "../agents/Agent"
+import eventBus from "./EventBus"
+import commandBus from "./CommandBus"
 
 export default class AgentManager {
   private agents: Map<string, Agent>
@@ -7,6 +9,64 @@ export default class AgentManager {
   constructor() {
     this.agents = new Map()
     this.currentAgent = null
+    this.subscribeAllEvents()
+    this.registerAllCommands()
+  }
+
+  // ========================
+  // 全局Event订阅
+  // ========================
+  private subscribeAllEvents() {
+    // 订阅应用退出事件
+    eventBus.subscribe("event:app:exit", () => {
+      // 退出前flush当前Agent记忆
+      const currentAgent = this.getCurrentAgent()
+      currentAgent.memory.flush()
+    })
+
+    // 订阅会话清空事件
+    eventBus.subscribe("event:session:clear", () => {
+      const currentAgent = this.getCurrentAgent()
+      currentAgent.memory.clear()
+    })
+  }
+  // ========================
+  // 全局Command订阅
+  // ========================
+  private registerAllCommands() {
+    // 订阅Agent列表查询命令
+    commandBus.register("command:agent:list", () => {
+      return {
+        agents: this.getAgents(),
+        currentAgent: this.getCurrentAgent(),
+      }
+    })
+    // 订阅Agent切换命令
+    commandBus.register("command:agent:switch", (agentName: string) => {
+      const currentAgent = this.switchAgent(agentName)
+      return {
+        success: currentAgent ? true : false,
+        agent: currentAgent,
+      }
+    })
+    // 订阅技能列表查询命令
+    commandBus.register("command:skill:list", () => {
+      const currentAgent = this.getCurrentAgent()
+      return {
+        skills: currentAgent.skillManager.getSkills(),
+        loadedSkillName: currentAgent.currentSkill?.name,
+      }
+    })
+    // 订阅技能加载命令
+    commandBus.register("command:skill:load", (skillName: string) => {
+      try {
+        const currentAgent = this.getCurrentAgent()
+        const success = currentAgent.loadSkill(skillName)
+        return { success }
+      } catch (e) {
+        return { success: false, message: (e as Error).message }
+      }
+    })
   }
 
   // 注册Agent

@@ -32,7 +32,8 @@ const skillManager = new SkillManager()
 
 // 工具管理器 - 统一管理所有系统工具，自动注入到Agent中
 const toolsManager = new ToolsManager()
-toolsManager.register(PowerShellTool, PowerShellToolDefinition) // 注册代码执行工具
+.register(PowerShellTool, PowerShellToolDefinition)
+
 
 // 默认模型配置 - 请根据实际使用的大模型参数修改
 const DEFAULT_MODEL: Model = {
@@ -80,9 +81,10 @@ const terminalUI = new TerminalUI({
     if (!trimInput) return
 
     try {
-      // 优先处理命令输入
+      // 优先处理命令输入(过滤命令)
       if (commandExecuter.isCommand(trimInput)) {
         await commandExecuter.executeCommand(trimInput)
+        return ""
       }
       // 输出对话
       return await agentManager.getCurrentAgent().chat(trimInput)
@@ -94,6 +96,5 @@ const terminalUI = new TerminalUI({
 
 // 命令解析器 - 处理系统命令（切换Agent、管理技能等
 const commandExecuter = new CommandExecuter({
-  agentManager,
   terminalUI,
 })

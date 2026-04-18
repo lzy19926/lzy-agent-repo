@@ -1,5 +1,7 @@
-import type AgentManager from "./AgentManager"
+import eventBus from "./EventBus"
+import commandBus from "./CommandBus"
 import type TerminalUI from "./TerminalUI"
+import type Agent from "../agents/Agent"
 
 interface Command {
   description: string
@@ -7,17 +9,14 @@ interface Command {
 }
 
 interface CommandExecuterOptions {
-  agentManager: AgentManager
   terminalUI: TerminalUI
 }
 
 export default class CommandExecuter {
-  private agentManager: AgentManager
   private terminalUI: TerminalUI
   private commands: Record<string, Command>
 
   constructor(options: CommandExecuterOptions = {} as CommandExecuterOptions) {
-    this.agentManager = options.agentManager
     this.terminalUI = options.terminalUI
     this.commands = {
       "/": {
@@ -45,6 +44,12 @@ export default class CommandExecuter {
         execute: this.listSkills.bind(this),
       },
     }
+
+    process.on("SIGINT", () => {
+      eventBus.publish("event:app:exit")
+      this.terminalUI.close()
+      process.exit(0)
+    })
   }
 
   // 检查是否是命令
@@ -94,14 +99,16 @@ export default class CommandExecuter {
   }
 
   exit(): void {
+    // 发布退出事件，通知外部处理清理工作
+    eventBus.publish("event:app:exit")
     this.terminalUI.close()
-    this.agentManager.getCurrentAgent().memory.flush()
+    process.exit(0)
   }
 
   clear(): void {
     this.terminalUI.clear()
-    // 清空当前活跃Agent记忆
-    this.agentManager.getCurrentAgent().memory.clear()
+    // 发布清空会话事件，由外部处理记忆清空
+    eventBus.publish("event:session:clear")
     this.terminalUI.printSuccess("已清屏并清空当前会话上下文")
   }
 
@@ -127,85 +134,78 @@ export default class CommandExecuter {
   }
 
   async listAgents(): Promise<void> {
-    const agents = this.agentManager.getAgents()
-    const currentAgent = this.agentManager.getCurrentAgent()
+    // 1. 获取Agent列表和当前Agent（回调转Promise）
+    const { agents, currentAgent } = await commandBus.invoke(
+      "command:agent:list"
+    )
 
-    // 构造选择项，当前使用的Agent加上标记
-    const selectOptions = agents.map((agent) => ({
+    // 2. 构造选择项
+    const selectOptions = agents.map((agent: Agent) => ({
       name: agent.name + (agent.name === currentAgent.name ? " (current)" : ""),
       value: agent,
       description: agent.description,
     }))
 
-    // 显示交互式选择菜单
-    await this.terminalUI.select(
+    // 3. 显示选择菜单并等待用户选择（直接await结果，无需回调）
+    const selectedAgent = (await this.terminalUI.select(
       selectOptions,
-      "🤖 可用Agent：",
-      async (selectedAgent) => {
-        if (selectedAgent) {
-          try {
-            const agent = this.agentManager.switchAgent(selectedAgent.name)
-            this.terminalUI.printSuccess(
-              `已切换到Agent: ${agent.name} - ${agent.description}`
-            )
-          } catch (e) {
-            this.terminalUI.printError(`切换失败：${(e as Error).message}`)
-          }
-        }
-      }
-    )
-  }
+      "🤖 可用Agent："
+    )) as Agent
 
-  async switchAgent(args: string[]): Promise<void> {
-    if (args.length === 0) {
-      // 没有参数时显示交互式选择菜单
-      await this.listAgents()
-      return
-    }
-    const agentName = args[0]
-    const agent = this.agentManager.switchAgent(agentName)
-    this.terminalUI.printSuccess(
-      `已切换到Agent: ${agent.name} - ${agent.description}`
+    if (!selectedAgent) return
+
+    // 4. 切换Agent（回调转Promise）
+    const { success, agent } = await commandBus.invoke(
+      "command:agent:switch",
+      selectedAgent.name
     )
+    // 5. 处理结果
+    if (success && agent) {
+      this.terminalUI.printSuccess(
+        `已切换到Agent: ${agent.name} - ${agent.description}`
+      )
+    } else {
+      this.terminalUI.printError(`切换Agent失败`)
+    }
   }
 
   async listSkills(): Promise<void> {
-    const currentAgent = this.agentManager.getCurrentAgent()
-    const skills = currentAgent.skillManager.getSkills()
+    // 1. 获取技能列表和已加载技能（回调转Promise）
+    const { skills, loadedSkillName } = await commandBus.invoke(
+      "command:skill:list"
+    )
 
     if (skills.length === 0) {
       this.terminalUI.printInfo("当前Agent没有可用技能")
       return
     }
 
-    // 获取当前已加载的技能
-    const loadedSkillName = currentAgent.currentSkill?.name
-
-    // 构造选择项，已加载的技能加上✅标记
-    const selectOptions = skills.map((skill) => ({
+    // 2. 构造选择项
+    const selectOptions = skills.map((skill: any) => ({
       name: skill.name + (skill.name === loadedSkillName ? " (current)" : ""),
       value: skill,
       description: skill.description,
     }))
 
-    // 显示交互式选择菜单
-    await this.terminalUI.select(
+    // 3. 显示选择菜单并等待用户选择（直接await结果，无需回调）
+    const selectedSkill: any = await this.terminalUI.select(
       selectOptions,
-      "🛠️  当前Agent可用技能：",
-      (selectedSkill) => {
-        if (selectedSkill) {
-          try {
-            const success = currentAgent.loadSkill(selectedSkill.name)
-            if (success) {
-              this.terminalUI.printSuccess(`成功加载：${selectedSkill.name}`)
-            } else {
-              this.terminalUI.printError(`加载失败：${selectedSkill.name}`)
-            }
-          } catch (e) {
-            this.terminalUI.printError(`加载失败：${(e as Error).message}`)
-          }
-        }
-      }
+      "🛠️  当前Agent可用技能："
     )
+
+    if (!selectedSkill) return
+
+    // 4. 加载技能（调用CommandBus）
+    const { success, message } = await commandBus.invoke(
+      "command:skill:load",
+      selectedSkill.name
+    )
+
+    // 5. 处理结果
+    if (success) {
+      this.terminalUI.printSuccess(`成功加载：${selectedSkill.name}`)
+    } else {
+      this.terminalUI.printError(`加载失败：${message || selectedSkill.name}`)
+    }
   }
 }
