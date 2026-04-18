@@ -5,6 +5,33 @@ import type {
   FunctionToolDefinition,
 } from "../types/types"
 
+const definition: FunctionToolDefinition = {
+  type: "function",
+  function: {
+    name: "PowerShellTool",
+    description:
+      "执行PowerShell命令，支持标准PowerShell语法、管道、重定向等操作。",
+    parameters: {
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          description: "要执行的完整PowerShell命令，支持所有合法PowerShell语法",
+        },
+        timeout: {
+          type: "number",
+          description:
+            "命令执行超时时间，单位毫秒，默认60000（60秒），最大支持300000（5分钟）",
+          default: 60000,
+        },
+      },
+      required: ["command"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+}
+
 async function _executePowerShellTool(
   { command, timeout }: any,
   signal?: AbortSignal
@@ -75,33 +102,6 @@ async function _executePowerShellTool(
       )
     })
   })
-}
-
-const definition: FunctionToolDefinition = {
-  type: "function",
-  function: {
-    name: "PowerShellTool",
-    description:
-      "执行PowerShell命令，支持标准PowerShell语法、管道、重定向等操作。",
-    parameters: {
-      type: "object",
-      properties: {
-        command: {
-          type: "string",
-          description: "要执行的完整PowerShell命令，支持所有合法PowerShell语法",
-        },
-        timeout: {
-          type: "number",
-          description:
-            "命令执行超时时间，单位毫秒，默认60000（60秒），最大支持300000（5分钟）",
-          default: 60000,
-        },
-      },
-      required: ["command"],
-      additionalProperties: false,
-    },
-    strict: true,
-  },
 }
 
 const executePowerShellTool = async (
