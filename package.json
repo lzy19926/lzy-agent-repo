@@ -1,6 +1,6 @@
 {
   "name": "@lzy19926/agent-repo",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "极简Agent构建框架，支持多Agent切换、多Agent通信、技能扩展、工具调用和持久化记忆的CLI工具",
   "type": "commonjs",
   "main": "dist/index.js",
