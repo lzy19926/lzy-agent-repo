@@ -1,5 +1,5 @@
 {
-  "name": "lzy-agent-cli",
+  "name": "lzy-agent-repo",
   "version": "1.0.0",
   "description": "极简Agent构建框架+CLI工具",
   "main": "src/index.js",
