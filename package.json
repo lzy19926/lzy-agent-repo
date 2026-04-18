@@ -1,21 +1,47 @@
 {
-  "name": "lzy-agent-repo",
+  "name": "@lzy19926/agent-repo",
   "version": "1.0.0",
-  "description": "极简Agent构建框架+CLI工具",
-  "main": "src/index.js",
+  "description": "极简Agent构建框架，支持多Agent切换、多Agent通信、技能扩展、工具调用和持久化记忆的CLI工具",
+  "type": "commonjs",
+  "main": "dist/index.js",
   "bin": {
-    "agent": "./bin/agent.js"
+    "agent": "./bin/agent.js",
+    "lzy-agent": "./bin/agent.js"
   },
   "scripts": {
     "start": "node dist/index.js",
     "build": "tsc",
     "dev": "tsc --watch",
     "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "agent",
+    "ai",
+    "llm",
+    "cli",
+    "多Agent",
+    "智能助手",
+    "大模型"
+  ],
+  "author": "lzy19926",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lzy19926/lzy-agent-repo.git"
+  },
+  "homepage": "https://github.com/lzy19926/lzy-agent-repo#readme",
   "dependencies": {
     "@clack/prompts": "^1.2.0",
     "front-matter": "^4.0.2",
