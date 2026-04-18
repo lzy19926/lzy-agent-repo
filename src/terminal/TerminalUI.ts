@@ -5,13 +5,15 @@ interface ListItem {
   description?: string
 }
 
+type OnInputResult = Promise<{ content: string; agentName: string }>
+
 interface TerminalUIOptions {
   prompt?: string
-  onInput?: (input: string) => Promise<string> | string
+  onInput?: (input: string) => OnInputResult
 }
 
 export default class TerminalUI {
-  private onInput?: (input: string) => Promise<string> | string
+  private onInput?: (input: string) => OnInputResult
   private promptText: string
   private isRunning: boolean = true
 
@@ -44,9 +46,10 @@ export default class TerminalUI {
 
       try {
         if (this.onInput) {
-          const text = await this.onInput(trimInput)
-          if (text) {
-            this.print(text, "🤖 >--")
+          const { content, agentName } = await this.onInput(trimInput)
+          if (content) {
+            clack.log.info(`🤖[${agentName}]`)
+            clack.log.info(content)
           }
         }
       } catch (e: unknown) {
@@ -119,10 +122,10 @@ export default class TerminalUI {
     const selected = await clack.select({
       message: title || "请选择：",
       //@ts-ignore
-      options: options.map(opt => ({
+      options: options.map((opt) => ({
         label: opt.name,
         value: opt.value,
-        description: opt.description
+        description: opt.description,
       })),
     })
 

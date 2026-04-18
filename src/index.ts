@@ -4,6 +4,8 @@ import {
   PowerShellTool,
   PowerShellToolDefinition,
 } from "./tools/PowerShellTool"
+import { BashTool, BashToolDefinition } from "./tools/BashTool"
+import { WebSearchTool, WebSearchToolDefinition } from "./tools/WebSearchTool"
 import ToolsManager from "./core/ToolsManager"
 import AgentManager from "./core/AgentManager"
 import TerminalUI from "./terminal/TerminalUI"
@@ -32,8 +34,9 @@ const skillManager = new SkillManager()
 
 // 工具管理器 - 统一管理所有系统工具，自动注入到Agent中
 const toolsManager = new ToolsManager()
-.register(PowerShellTool, PowerShellToolDefinition)
-
+  .register(PowerShellTool, PowerShellToolDefinition)
+  .register(BashTool, BashToolDefinition)
+  .register(WebSearchTool, WebSearchToolDefinition)
 
 // 默认模型配置 - 请根据实际使用的大模型参数修改
 const DEFAULT_MODEL: Model = {
@@ -80,14 +83,18 @@ const terminalUI = new TerminalUI({
     const trimInput = input.trim()
     if (!trimInput) return
 
+    const currentAgent = agentManager.getCurrentAgent()
+    const agentName = agentManager.getCurrentAgent().name
+
     try {
       // 优先处理命令输入(过滤命令)
       if (commandExecuter.isCommand(trimInput)) {
         await commandExecuter.executeCommand(trimInput)
-        return ""
+        return { content: "", agentName }
       }
       // 输出对话
-      return await agentManager.getCurrentAgent().chat(trimInput)
+      const content = await currentAgent.chat(trimInput)
+      return { content, agentName }
     } catch (e: unknown) {
       return terminalUI.printError(`处理失败: ${(e as Error)?.message}`)
     }
