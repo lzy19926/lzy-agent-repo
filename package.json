@@ -1,0 +1,28 @@
+{
+  "name": "lzy-agent-cli",
+  "version": "1.0.0",
+  "description": "极简 Agent CLI 工具，基于 pi-nomo 的 agent-loop 原理",
+  "main": "src/index.js",
+  "bin": {
+    "agent": "./bin/agent.js"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "front-matter": "^4.0.2",
+    "openai": "^6.34.0",
+    "yaml": "^2.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}
