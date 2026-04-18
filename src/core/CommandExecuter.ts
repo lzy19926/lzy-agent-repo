@@ -1,28 +1,24 @@
 import type AgentManager from "./AgentManager"
 import type TerminalUI from "./TerminalUI"
-import type ShortTurnMemory from "./ShortTurnMemory"
 
 interface Command {
   description: string
   execute: (args: string[]) => Promise<void> | void
 }
 
-interface CommandParserOptions {
+interface CommandExecuterOptions {
   agentManager: AgentManager
   terminalUI: TerminalUI
-  memory: ShortTurnMemory
 }
 
-export default class CommandParser {
+export default class CommandExecuter {
   private agentManager: AgentManager
   private terminalUI: TerminalUI
-  private memory: ShortTurnMemory
   private commands: Record<string, Command>
 
-  constructor(options: CommandParserOptions = {} as CommandParserOptions) {
+  constructor(options: CommandExecuterOptions = {} as CommandExecuterOptions) {
     this.agentManager = options.agentManager
     this.terminalUI = options.terminalUI
-    this.memory = options.memory
     this.commands = {
       "/": {
         description: "选择命令并执行",
@@ -99,12 +95,13 @@ export default class CommandParser {
 
   exit(): void {
     this.terminalUI.close()
-    this.memory.flush()
+    this.agentManager.getCurrentAgent().memory.flush()
   }
 
   clear(): void {
     this.terminalUI.clear()
-    this.memory.clear()
+    // 清空当前活跃Agent记忆
+    this.agentManager.getCurrentAgent().memory.clear()
     this.terminalUI.printSuccess("已清屏并清空当前会话上下文")
   }
 

@@ -1,20 +1,30 @@
 import ShortTurnMemory from "./core/ShortTurnMemory"
 import SkillManager from "./core/SkillManager"
-import { PowerShellTool,PowerShellToolDefinition } from "./tools/PowerShellTool"
+import {
+  PowerShellTool,
+  PowerShellToolDefinition,
+} from "./tools/PowerShellTool"
 import ToolsManager from "./core/ToolsManager"
 import AgentManager from "./core/AgentManager"
 import TerminalUI from "./core/TerminalUI"
-import CommandParser from "./core/CommandParser"
+import CommandExecuter from "./core/CommandExecuter"
 import type { Model } from "./types/types"
 import Agent from "./agents/Agent"
 
 // ========================
 // 1. 核心配置
 // ========================
-// 短期记忆 - 持久化最近100条对话消息，JSONL格式存储
-const shortTurnMemory = new ShortTurnMemory({
+// 为每个Agent创建独立的短期记忆实例，按agent name隔离
+const generalAgentMemory = new ShortTurnMemory({
+  id: "general-agent",
   persist: true,
-  maxLength: 100, // 可自定义最大记忆条数
+  maxLength: 100,
+})
+
+const codeAgentMemory = new ShortTurnMemory({
+  id: "code-agent",
+  persist: true,
+  maxLength: 100,
 })
 
 // 技能管理器 - 自动扫描全局、项目、插件目录下的所有技能
@@ -22,7 +32,7 @@ const skillManager = new SkillManager()
 
 // 工具管理器 - 统一管理所有系统工具，自动注入到Agent中
 const toolsManager = new ToolsManager()
-toolsManager.register(PowerShellTool,PowerShellToolDefinition) // 注册代码执行工具
+toolsManager.register(PowerShellTool, PowerShellToolDefinition) // 注册代码执行工具
 
 // 默认模型配置 - 请根据实际使用的大模型参数修改
 const DEFAULT_MODEL: Model = {
@@ -39,9 +49,9 @@ agentManager.registerAgent(
     name: "general-agent",
     description: "通用智能助手，支持代码执行、技能调用和多轮对话",
     systemPrompt:
-      "你是一个乐于助人的智能助手，可以帮用户解答技术问题、编写调试代码、调用工具完成任务。回答简洁准确，需要时主动调用工具。",
+      "你是一个通用智能助手助手，可以帮用户解答技术问题、编写调试代码、调用工具完成任务。回答简洁准确，需要时主动调用工具。",
     model: DEFAULT_MODEL,
-    memory: shortTurnMemory,
+    memory: generalAgentMemory,
     skillManager,
     toolsManager,
   })
@@ -53,7 +63,7 @@ agentManager.registerAgent(
     systemPrompt:
       "你是一个讲话极度精准简洁的程序员，可以帮用户解答技术问题、编写调试代码、调用工具完成任务, 需要时主动调用工具。",
     model: DEFAULT_MODEL,
-    memory: shortTurnMemory,
+    memory: codeAgentMemory,
     skillManager,
     toolsManager,
   })
@@ -65,39 +75,25 @@ agentManager.registerAgent(
 
 // 终端UI - 处理用户输入输出
 const terminalUI = new TerminalUI({
-  onInput: async (input: string): Promise<string> => {
+  onInput: async (input: string): Promise<any> => {
     const trimInput = input.trim()
-    if (!trimInput) return ""
+    if (!trimInput) return
 
     try {
       // 优先处理命令输入
-      if (commandParser.isCommand(trimInput)) {
-        await commandParser.executeCommand(trimInput)
-        return ""
+      if (commandExecuter.isCommand(trimInput)) {
+        await commandExecuter.executeCommand(trimInput)
       }
-
-      // 处理普通对话输入 - Agent内部自动管理上下文和输出
-      const currentAgent = agentManager.getCurrentAgent()
-
-      const text = await currentAgent.chat(trimInput)
-      return text
+      // 输出对话
+      return await agentManager.getCurrentAgent().chat(trimInput)
     } catch (e: unknown) {
-      const error = e as Error
-      terminalUI.printError(`处理失败: ${error.message}`)
-      return ""
+      return terminalUI.printError(`处理失败: ${(e as Error)?.message}`)
     }
   },
 })
 
 // 命令解析器 - 处理系统命令（切换Agent、管理技能等
-const commandParser = new CommandParser({
+const commandExecuter = new CommandExecuter({
   agentManager,
   terminalUI,
-  memory: shortTurnMemory,
-})
-
-// 处理退出信号
-process.on("SIGINT", () => {
-  terminalUI.close()
-  process.exit(0)
 })

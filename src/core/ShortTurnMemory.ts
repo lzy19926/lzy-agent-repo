@@ -3,11 +3,13 @@ import path from "path"
 import type { Message } from "../types/types"
 
 export interface ShortTurnMemoryOptions {
+  /** 记忆实例ID，用于隔离不同Agent的记忆，不传时使用全局默认路径 */
+  id?: string
   /** 是否持久化到磁盘 */
   persist?: boolean
   /** 最大记忆条数，默认100 */
   maxLength?: number
-  /** 持久化文件路径，默认: ./.short_term_memory.jsonl */
+  /** 持久化文件路径，默认: ./.lzyAgentCli/memory/{id}/short_term_memory.jsonl */
   persistPath?: string
   /** 持久化防抖延迟，默认200ms，短时间内连续写入会合并为一次 */
   saveDelay?: number
@@ -29,13 +31,21 @@ export default class ShortTurnMemory {
   constructor(options: ShortTurnMemoryOptions = {}) {
     this.maxLength = options.maxLength ?? 100
     this.persist = options.persist ?? false
-    this.persistPath =
-      options.persistPath ??
-      path.join(
-        process.cwd(),
-        "./.lzyAgentCli/memory",
-        ".short_term_memory.jsonl"
-      )
+
+    // 处理持久化路径：如果有id则按id隔离，否则使用默认路径
+    if (options.persistPath) {
+      this.persistPath = options.persistPath
+    } else {
+      const memoryBaseDir = path.join(process.cwd(), "./.lzyAgentCli/memory")
+      if (options.id) {
+        // 按id隔离路径
+        this.persistPath = path.join(memoryBaseDir, options.id, "short_term_memory.jsonl")
+      } else {
+        // 全局默认路径
+        this.persistPath = path.join(memoryBaseDir, "short_term_memory.jsonl")
+      }
+    }
+
     this.saveDelay = options.saveDelay ?? 200
 
     // 开启持久化时加载磁盘上的历史记录
