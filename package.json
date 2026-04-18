@@ -1,7 +1,7 @@
 {
   "name": "lzy-agent-cli",
   "version": "1.0.0",
-  "description": "极简 Agent CLI 工具，基于 pi-nomo 的 agent-loop 原理",
+  "description": "极简Agent构建框架+CLI工具",
   "main": "src/index.js",
   "bin": {
     "agent": "./bin/agent.js"

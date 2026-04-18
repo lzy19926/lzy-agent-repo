@@ -1,13 +1,14 @@
 # 🤖 LZY Agent CLI
 
-极简 Agent CLI 工具，基于 pi-nomo 的 agent-loop 原理实现，原生TypeScript开发，支持多Agent切换、技能扩展、工具调用和持久化记忆。
+原生TypeScript开发的极简Agent构建框架 , Agent CLI 工具，支持多Agent切换、多Agent通信, 技能扩展、工具调用和持久化记忆。
 
 ## ✨ 功能特性
 
 - ✅ 终端多轮对话，基于 [@clack/prompts](https://github.com/natemoo-re/clack) 打造优雅交互体验
 - ✅ 自定义技能系统，自动扫描全局/项目/插件目录下的技能，轻松扩展功能
-- ✅ 系统工具支持，内置PowerShell命令执行工具，可直接调用系统能力
+- ✅ 系统工具支持，内置PowerShell/Bash/WebSearch/消息转发等工具，可直接调用系统能力
 - ✅ 多Agent架构，支持不同角色的专业Agent切换，每个Agent拥有独立记忆
+- ✅ 多Agent通信，Agent之间可以互相发送消息、委托任务，支持灵活的多Agent协作
 - ✅ 分层上下文记忆，短期记忆支持持久化到本地文件，会话永不丢失
 - ✅ 原生对接LLM大模型，默认支持智谱GLM-4系列，可扩展其他模型
 - ✅ 内置多种实用命令，支持Agent切换、技能管理等操作
@@ -30,15 +31,6 @@ npm start
 npm run dev
 ```
 
-### 全局安装
-```bash
-# 全局安装
-npm link
-
-# 运行
-agent
-```
-
 ## 📖 可用命令
 
 | 命令 | 说明 |
@@ -53,97 +45,10 @@ agent
 
 ## 🛠️ 自定义技能
 
-在 `src/skills/` 目录下新建TS/JS文件，按照以下格式编写：
+在 `.lzyAgentCli/skills/` 目录下新建SKILL.md文件/文件夹：
 
-```typescript
-import type { SkillDefinition } from "../types/types"
+程序启动时会自动加载 `.lzyAgentCli/skills/` 目录下的所有技能，也支持扫描全局和插件目录下的技能。
 
-const skill: SkillDefinition = {
-  name: 'skill_name', // 技能名称（唯一）
-  description: '技能描述',
-  parameters: [ // 参数定义
-    {
-      name: 'param1',
-      type: 'string',
-      required: true,
-      description: '参数描述'
-    }
-  ],
-  execute: async (params) => { // 技能执行逻辑
-    // 你的代码
-    return { result: '执行结果' }
-  }
-}
-
-export default skill
-```
-
-程序启动时会自动加载 `src/skills/` 目录下的所有技能，也支持扫描全局和插件目录下的技能。
-
-## 🧠 自定义Agent
-
-在 `src/agents/` 目录下新建TS文件，继承BaseAgent：
-
-```typescript
-import Agent from './Agent'
-import type { Model } from '../types/types'
-import ShortTurnMemory from '../core/ShortTurnMemory'
-import SkillManager from '../core/SkillManager'
-import ToolsManager from '../core/ToolsManager'
-
-class MyAgent extends Agent {
-  constructor(options: {
-    model: Model
-    memory: ShortTurnMemory
-    skillManager: SkillManager
-    toolsManager: ToolsManager
-  }) {
-    super({
-      name: 'my-agent', // Agent名称（唯一）
-      description: '我的自定义Agent',
-      systemPrompt: '你的系统提示词',
-      allowedSkills: [], // 允许使用的技能列表，空表示全部允许
-      ...options
-    })
-  }
-
-  // 可选：重写think方法，实现自定义的思考逻辑
-  // async think(lastActionResult = null) {
-  //   return {
-  //     action: 'reply',
-  //     content: '回复内容'
-  //   }
-  // }
-}
-
-export default MyAgent
-```
-
-然后在 `src/index.ts` 中注册你的Agent：
-```typescript
-agentManager.registerAgent(
-  new MyAgent({
-    model: DEFAULT_MODEL,
-    memory: myAgentMemory,
-    skillManager,
-    toolsManager,
-  })
-)
-```
-
-## 🔌 对接大模型
-
-默认内置了对智谱GLM-4系列模型的支持，修改 `src/index.ts` 中的 `DEFAULT_MODEL` 配置即可：
-
-```typescript
-const DEFAULT_MODEL: Model = {
-  name: "glm-4-7-251222", // 模型名称
-  apiKey: "your-api-key", // 你的API Key
-  baseURL: "https://ark.cn-beijing.volces.com/api/v3", // API地址
-}
-```
-
-如需支持其他模型（如OpenAI、Claude等），可以扩展 `src/agents/AgentLoop.ts` 中的LLM调用逻辑。
 
 ## 🔧 系统工具
 
@@ -161,6 +66,13 @@ const DEFAULT_MODEL: Model = {
 ```typescript
 // Agent会自动根据用户需求调用此工具
 // 例如用户问："查看当前目录下的文件"，Agent会自动调用Bash执行ls命令
+```
+
+### 消息转发工具
+支持Agent之间互相发送消息，实现多Agent协作：
+```typescript
+// Agent会自动根据用户需求调用此工具
+// 例如用户问："把'你好'发送给code-agent"，Agent会自动调用此工具转发消息
 ```
 
 如需添加更多系统工具，可以在 `src/tools/` 目录下编写，然后在 `src/index.ts` 中注册：
@@ -186,7 +98,10 @@ toolsManager.register(YourTool, YourToolDefinition)
 │   │   ├── TerminalUI.ts # 终端UI渲染和用户输入处理
 │   │   └── CommandExecuter.ts # 系统命令解析和执行
 │   ├── tools/            # 系统工具实现目录
-│   │   └── PowerShellTool.ts # PowerShell命令执行工具
+│   │   ├── PowerShellTool.ts # PowerShell命令执行工具
+│   │   ├── BashTool.ts # Bash命令执行工具
+│   │   ├── WebSearchTool.ts # 网页搜索工具
+│   │   └── SendMessageToAgentTool.ts # Agent间消息转发工具
 │   ├── types/            # TypeScript类型定义
 │   ├── utils/            # 工具函数
 │   ├── bus/              # 事件总线（可选）
