@@ -6,8 +6,8 @@ import {
 } from "./tools/PowerShellTool"
 import ToolsManager from "./core/ToolsManager"
 import AgentManager from "./core/AgentManager"
-import TerminalUI from "./core/TerminalUI"
-import CommandExecuter from "./core/CommandExecuter"
+import TerminalUI from "./terminal/TerminalUI"
+import CommandExecuter from "./terminal/CommandExecuter"
 import type { Model } from "./types/types"
 import Agent from "./agents/Agent"
 

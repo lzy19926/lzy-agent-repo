@@ -1,6 +1,6 @@
 import type Agent from "../agents/Agent"
-import eventBus from "./EventBus"
-import commandBus from "./CommandBus"
+import eventBus from "../bus/EventBus"
+import commandBus from "../bus/CommandBus"
 
 export default class AgentManager {
   private agents: Map<string, Agent>

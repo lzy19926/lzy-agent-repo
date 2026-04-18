@@ -1,5 +1,5 @@
-import eventBus from "./EventBus"
-import commandBus from "./CommandBus"
+import eventBus from "../bus/EventBus"
+import commandBus from "../bus/CommandBus"
 import type TerminalUI from "./TerminalUI"
 import type Agent from "../agents/Agent"
 
@@ -36,11 +36,11 @@ export default class CommandExecuter {
         execute: this.clear.bind(this),
       },
       "/agents": {
-        description: "查看所有可用的Agent",
+        description: "查看所有可用的Agent,并进行切换",
         execute: this.listAgents.bind(this),
       },
       "/skills": {
-        description: "查看当前Agent可用的技能",
+        description: "查看当前Agent可用的技能,并进行切换",
         execute: this.listSkills.bind(this),
       },
     }
