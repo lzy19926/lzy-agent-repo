@@ -21,12 +21,13 @@ export async function callLLM(
 
   const call_OpenAI = async () => {
     const openai = new OpenAI({ apiKey, baseURL })
-
-    const systemMessage = context.systemPrompt
-      ? [{ role: "system", content: context.systemPrompt || "" }]
-      : []
-
     const historyMessages = context.messages.map((msg) => {
+      if (msg.role === "system") {
+        return {
+          role: "system",
+          content: msg.content.map((c: any) => c.text).join(""),
+        }
+      }
       if (msg.role === "user") {
         return {
           role: "user",
@@ -52,7 +53,7 @@ export async function callLLM(
     return await openai.chat.completions.create({
       model: model.name,
       //@ts-ignore
-      messages: [...systemMessage, ...historyMessages],
+      messages: [...historyMessages],
       tools: tools,
     })
   }

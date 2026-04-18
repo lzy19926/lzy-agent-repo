@@ -15,12 +15,12 @@ export default class SkillManager {
   private skills: Map<string, SkillMeta> // 技能注册表
   private static DEFAULT_GLOBAL_SKILLS_DIR = path.join(
     os.homedir(),
-    ".claude",
+    ".lzyAgentCli",
     "skills"
   )
   private static DEFAULT_PROJECT_SKILLS_DIR = path.join(
     process.cwd(),
-    ".claude",
+    ".lzyAgentCli",
     "skills"
   )
 
@@ -58,9 +58,9 @@ export default class SkillManager {
         try {
           // 仅读取文件前部分，解析YAML元数据，不加载完整body
           const content = fs.readFileSync(skillMetaPath, "utf8")
-          const parts = content.split("---\n")
+          const parts = content.split(/---[\r\n]+/)
 
-          if (parts.length < 3) continue // 不符合SKILL.md格式要求
+          if (parts.length < 2) continue // 不符合SKILL.md格式要求
 
           // 解析元数据部分
           const metaYaml = parts[1]
@@ -102,21 +102,51 @@ export default class SkillManager {
     if (skill.path && !skill.body && fs.existsSync(skill.path)) {
       try {
         const content = fs.readFileSync(skill.path, "utf8")
-        const parts = content.split("---\n")
-        skill.body =
-          parts.length >= 3 ? parts.slice(2).join("---\n").trim() : content
+        const parts = content.split(/---[\r\n]+/)
+
+        let yaml = ""
+        let body = ""
+
+        if (parts.length >= 3) {
+          // 标准格式：---\nyaml---\nbody
+          yaml = parts[1].trim()
+          body = parts.slice(2).join("---\n").trim()
+        } else if (parts.length === 2) {
+          // 紧凑格式：yaml---\nbody
+          yaml = parts[0].trim()
+          body = parts[1].trim()
+        }
+
+        // 最终 body 必须赋值（即使空）
+        skill.body = body || ""
       } catch (e) {
         console.error(`加载技能内容失败: ${skillName}`, (e as Error).message)
       }
     }
-
     return { ...skill }
   }
 
   /**
-   * 生成技能注入prompt
+   * 生成所有可用技能的列表提示
+   * 用于注入到系统prompt中，告知大模型所有可用技能
    */
-  generateSkillPrompt(
+  generateSkillListPrompt(): string {
+    const skills = this.getSkills()
+    if (skills.length === 0) return ""
+
+    let prompt = "当前可用技能列表：\n\n"
+    skills.forEach((skill, index) => {
+      prompt += `${index + 1}. skill_name: ${skill.name}\n`
+      prompt += `   description: ${skill.description}\n\n`
+    })
+    prompt += "需要使用某个技能时，请调用 load_skill 工具加载完整技能内容。"
+    return prompt
+  }
+
+  /**
+   * 生成已加载技能的完整提示，包含工具调用说明
+   */
+  generateLoadedSkillPrompt(
     skillName: string,
     params?: Record<string, unknown>
   ): string {
@@ -124,13 +154,18 @@ export default class SkillManager {
     if (!skill) return ""
 
     return `
-<system>
+你已经加载了技能 ${skill.name}，可以直接使用：
+
 【技能：${skill.name}】
 ${skill.description}
 ---
 ${skill.body}
 ${params ? `\n【输入参数】：${JSON.stringify(params, null, 2)}` : ""}
-</system>
+
+当你需要使用工具时，按照以下格式返回：
+<|FunctionCallBegin|>[{"name":"工具名称","parameters":{"参数名":"参数值"}}]<|FunctionCallEnd|>
+
+不需要使用工具时直接回复用户即可。
 `
   }
 }

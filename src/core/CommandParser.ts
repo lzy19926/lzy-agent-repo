@@ -24,6 +24,10 @@ export default class CommandParser {
     this.terminalUI = options.terminalUI
     this.memory = options.memory
     this.commands = {
+      "/": {
+        description: "选择命令并执行",
+        execute: this.listCommands.bind(this),
+      },
       "/help": {
         description: "查看帮助信息",
         execute: this.showHelp.bind(this),
@@ -50,6 +54,14 @@ export default class CommandParser {
   // 检查是否是命令
   isCommand(input: string): boolean {
     return input.startsWith("/")
+  }
+
+  // 获取所有命令列表
+  getCommands(): { name: string; description: string }[] {
+    return Object.entries(this.commands).map(([name, cmd]) => ({
+      name,
+      description: cmd.description,
+    }))
   }
 
   // 解析并执行命令
@@ -96,24 +108,61 @@ export default class CommandParser {
     this.terminalUI.printSuccess("已清屏并清空当前会话上下文")
   }
 
-  listAgents(): void {
+  async listCommands(): Promise<void> {
+    const commands = this.getCommands()
+    // 构造选择项
+    const selectOptions = commands.map((cmd) => ({
+      name: cmd.name,
+      value: cmd.name,
+      description: cmd.description,
+    }))
+
+    // 显示命令选择菜单
+    const selectedCmd = await this.terminalUI.select(
+      selectOptions,
+      "📖 可用命令："
+    )
+
+    if (selectedCmd) {
+      // 执行选中的命令
+      await this.executeCommand(selectedCmd)
+    }
+  }
+
+  async listAgents(): Promise<void> {
     const agents = this.agentManager.getAgents()
     const currentAgent = this.agentManager.getCurrentAgent()
-    this.terminalUI.printList(
-      agents.map((agent) => ({
-        name:
-          agent.name + (agent.name === currentAgent.name ? " (当前使用)" : ""),
-        description: agent.description,
-      })),
-      "🤖 可用Agent："
+
+    // 构造选择项，当前使用的Agent加上标记
+    const selectOptions = agents.map((agent) => ({
+      name: agent.name + (agent.name === currentAgent.name ? " (current)" : ""),
+      value: agent,
+      description: agent.description,
+    }))
+
+    // 显示交互式选择菜单
+    await this.terminalUI.select(
+      selectOptions,
+      "🤖 可用Agent：",
+      async (selectedAgent) => {
+        if (selectedAgent) {
+          try {
+            const agent = this.agentManager.switchAgent(selectedAgent.name)
+            this.terminalUI.printSuccess(
+              `已切换到Agent: ${agent.name} - ${agent.description}`
+            )
+          } catch (e) {
+            this.terminalUI.printError(`切换失败：${(e as Error).message}`)
+          }
+        }
+      }
     )
   }
 
-  switchAgent(args: string[]): void {
+  async switchAgent(args: string[]): Promise<void> {
     if (args.length === 0) {
-      this.terminalUI.printError(
-        "请指定要切换的Agent名称，用法：/use <agent-name>"
-      )
+      // 没有参数时显示交互式选择菜单
+      await this.listAgents()
       return
     }
     const agentName = args[0]
@@ -123,15 +172,43 @@ export default class CommandParser {
     )
   }
 
-  listSkills(): void {
+  async listSkills(): Promise<void> {
     const currentAgent = this.agentManager.getCurrentAgent()
     const skills = currentAgent.skillManager.getSkills()
-    this.terminalUI.printList(
-      skills.map((skill) => ({
-        name: skill.name,
-        description: `${skill.description}`,
-      })),
-      "🛠️  当前Agent可用技能："
+
+    if (skills.length === 0) {
+      this.terminalUI.printInfo("当前Agent没有可用技能")
+      return
+    }
+
+    // 获取当前已加载的技能
+    const loadedSkillName = currentAgent.currentSkill?.name
+
+    // 构造选择项，已加载的技能加上✅标记
+    const selectOptions = skills.map((skill) => ({
+      name: skill.name + (skill.name === loadedSkillName ? " (current)" : ""),
+      value: skill,
+      description: skill.description,
+    }))
+
+    // 显示交互式选择菜单
+    await this.terminalUI.select(
+      selectOptions,
+      "🛠️  当前Agent可用技能：",
+      (selectedSkill) => {
+        if (selectedSkill) {
+          try {
+            const success = currentAgent.loadSkill(selectedSkill.name)
+            if (success) {
+              this.terminalUI.printSuccess(`成功加载：${selectedSkill.name}`)
+            } else {
+              this.terminalUI.printError(`加载失败：${selectedSkill.name}`)
+            }
+          } catch (e) {
+            this.terminalUI.printError(`加载失败：${(e as Error).message}`)
+          }
+        }
+      }
     )
   }
 }

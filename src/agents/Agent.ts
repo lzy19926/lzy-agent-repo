@@ -41,7 +41,7 @@ export default class Agent {
   public memory: ShortTurnMemory
   public skillManager: SkillManager
   public toolsManager: ToolsManager
-  private _currentSkill?: SkillMeta
+  public currentSkill?: SkillMeta
 
   constructor(options: AgentOptions) {
     this.name = options.name || "agent"
@@ -51,50 +51,93 @@ export default class Agent {
     this.memory = options.memory
     this.skillManager = options.skillManager
     this.toolsManager = options.toolsManager
+
+    this.init()
   }
 
-  // 生成最终回复
-  async generateFinalReply(lastActionResult: unknown = null): Promise<string> {
-    if (lastActionResult) {
-      return `执行结果：${JSON.stringify(lastActionResult)}`
-    }
-    return "处理完成"
+  // 初始化系统
+  private init() {
+    const systemPrompt = this.buildSystemPrompt()
+
+    this.memory.addMessages([
+      {
+        role: "system",
+        content: [{ type: "text", text: systemPrompt }],
+        timestamp: Date.now(),
+      },
+    ])
   }
 
   /**
-   * 选择单个可用技能
-   * @param skillName 技能名称
-   * @returns 是否选择成功
+   * 构造chat方法的返回结果
+   * @param responseMessages AgentLoop返回的新增消息数组
+   * @returns 处理后的回复内容
    */
-  selectSkill(skillName: string): boolean {
-    this._currentSkill = this.skillManager.getSkill(skillName)
+  private buildChatResponse(responseMessages: Message[]): string {
+    const lastMessage = responseMessages[responseMessages.length - 1]
 
-    if (!this._currentSkill) return false
+    // 边界情况处理：无返回消息
+    if (!lastMessage?.content?.length) {
+      return "[INTERNAL ERROR: 无有效返回消息]"
+    }
+
+    const content = lastMessage.content[0]
+
+    if (content.type === "toolCall") {
+      return "toolCalling"
+    }
+
+    if (content.type === "text") {
+      return content.text
+    }
+
+    return `[INTERNAL ERROR: 未知消息类型]`
+  }
+
+  /**
+   * 加载技能并注入到消息上下文
+   * 读取SKILL.md的正文内容，构造为System消息添加到记忆中
+   * @param skillName 技能名称
+   * @returns 是否加载成功
+   */
+  loadSkill(skillName: string): boolean {
+    const skill = this.skillManager.getSkill(skillName)
+    if (!skill) return false
+
+    // 构造技能系统消息
+    const skillSystemMessage: Message = {
+      role: "system",
+      content: [
+        {
+          type: "text",
+          text: this.skillManager.generateLoadedSkillPrompt(skillName),
+        },
+      ],
+      timestamp: Date.now(),
+    }
+
+    // 添加到记忆上下文
+    this.memory.addMessages([skillSystemMessage])
+
+    this.currentSkill = skill
+
     return true
   }
 
   /**
-   * 构建完整的系统prompt，包含单个技能信息
-   * @param skillName 要使用的技能名称，不传则注入所有可用技能但限制单次只能用一个
-   * @returns 注入了技能描述的系统prompt
+   * 构建完整的系统prompt
    */
-  buildSystemPrompt(skillName?: string): string {
-    let systemPrompt = this.systemPrompt
-    let skillsPrompt = ""
+  buildSystemPrompt(): string {
+    // 基础系统提示 +
+    let userPrompt = this.systemPrompt
+    // 所有可用技能列表
+    let skillsMetaDataPrompt = this.skillManager.generateSkillListPrompt()
 
-    if (this._currentSkill) {
-      skillsPrompt = `
-      你可以使用以下工具来完成任务：
-      ${this.skillManager.generateSkillPrompt(this._currentSkill.name)}\n
+    let systemPrompt = `
+    ${userPrompt}\n\n
+    ${skillsMetaDataPrompt}\n\n`
 
-      当你需要使用工具时，按照以下格式返回：
-      <|FunctionCallBegin|>[{"name":"工具名称","parameters":{"参数名":"参数值"}}]<|FunctionCallEnd|>
-
-      不需要使用工具时直接回复用户即可。
-      `
-    }
-
-    return `${this.systemPrompt}${skillsPrompt}`
+    return systemPrompt
   }
 
   /**
@@ -104,17 +147,16 @@ export default class Agent {
    * @returns 更新后的消息列表，包含助手回复和工具执行结果
    */
   async chat(userInput: string, signal?: AbortSignal): Promise<string> {
-    // 1. 构造用户消息对象
-    const userMessage: Message = {
-      role: "user",
-      content: [{ type: "text", text: userInput }],
-      timestamp: Date.now(),
-    }
+    // 1. 保存用户消息到上下文
+    this.memory.addMessages([
+      {
+        role: "user",
+        content: [{ type: "text", text: userInput }],
+        timestamp: Date.now(),
+      },
+    ])
 
-    // 2. 保存用户消息到上下文
-    this.memory.addMessage(userMessage)
-
-    // 3. 调用AgentLoop执行对话，传入当前所有上下文消息
+    // 2. 调用AgentLoop执行对话，传入当前所有上下文消息
     const loopConfig = {
       systemPrompt: this.buildSystemPrompt(),
       tools: this.toolsManager.getTools(),
@@ -127,15 +169,10 @@ export default class Agent {
 
     const responseMessages = await runAgentLoop(messages, loopConfig, signal)
 
-    const lastMessage = responseMessages[responseMessages.length - 1]
-    const content = lastMessage?.content[0]
+    // 3. 保存Agent消息到上下文
+    this.memory.addMessages(responseMessages)
 
-    if (content.type === "toolCall") {
-      return "toolCalling"
-    }
-    if (content.type === "text") {
-      return content.text
-    }
-    return "[INTERNAL ERROR]"
+    // 4. 返回Agent回答结果
+    return this.buildChatResponse(responseMessages)
   }
 }

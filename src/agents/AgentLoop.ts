@@ -12,6 +12,7 @@ export async function runAgentLoop(
   signal?: AbortSignal
 ): Promise<Message[]> {
   const maxTurns = config.maxTurns ?? 5
+  const originalMessageCount = messages.length // 记录初始消息数量
 
   const context: Context = {
     systemPrompt: config.systemPrompt,
@@ -37,7 +38,7 @@ export async function runAgentLoop(
     for (const toolCall of toolCalls) {
       const tool = config.tools?.find((t) => t.name === toolCall.name)
       if (!tool) continue
-      debugger
+
       try {
         // Validate and execute tool
         const result = await tool.execute?.(toolCall.arguments)
@@ -68,5 +69,6 @@ export async function runAgentLoop(
     }
   }
 
-  return context.messages
+  // 仅返回本次循环新增的消息（从初始长度之后的部分）
+  return context.messages.slice(originalMessageCount)
 }

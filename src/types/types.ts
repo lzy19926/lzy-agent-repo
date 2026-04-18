@@ -25,14 +25,22 @@ export interface ToolCallContent {
 
 export type MessageContent = TextContent | ToolCallContent
 
+// 角色定义
+export type Role = "system" | "user" | "assistant" | "tool"
+
+// 系统消息
+export interface SystemMessage {
+  role: "system"
+  content: MessageContent[]
+  timestamp: number
+}
+
 // 用户消息
 export interface UserMessage {
   role: "user"
   content: MessageContent[]
   timestamp: number
 }
-
-export type Role = "system" | "user" | "assistant" | "tool"
 
 // 助手消息
 export interface AgentMessage {
@@ -54,7 +62,11 @@ export interface ToolResultMessage {
   timestamp: number
 }
 
-export type Message = UserMessage | AgentMessage | ToolResultMessage
+export type Message =
+  | SystemMessage
+  | UserMessage
+  | AgentMessage
+  | ToolResultMessage
 
 // 工具参数定义
 export type ToolParameter = { [key: string]: unknown }

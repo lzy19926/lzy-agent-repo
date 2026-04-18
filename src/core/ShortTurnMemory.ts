@@ -31,7 +31,11 @@ export default class ShortTurnMemory {
     this.persist = options.persist ?? false
     this.persistPath =
       options.persistPath ??
-      path.join(process.cwd(), "./.lzyAgentCli/", ".short_term_memory.jsonl")
+      path.join(
+        process.cwd(),
+        "./.lzyAgentCli/memory",
+        ".short_term_memory.jsonl"
+      )
     this.saveDelay = options.saveDelay ?? 200
 
     // 开启持久化时加载磁盘上的历史记录
@@ -41,16 +45,17 @@ export default class ShortTurnMemory {
   }
 
   /**
-   * 新增消息到记忆
+   * 批量新增消息到记忆
    * 超过最大长度时自动删除最早的消息
    * 防抖批量持久化到磁盘，优化写入性能
    */
-  addMessage(message: Message): void {
-    this.messages.push(message)
+  addMessages(messages: Message[]): void {
+    // 批量添加所有消息
+    this.messages.push(...messages)
 
     // 超过最大长度，删除最早的消息
     if (this.messages.length > this.maxLength) {
-      this.messages.shift()
+      this.messages = this.messages.slice(-this.maxLength)
     }
 
     // 持久化到磁盘：防抖合并连续写入

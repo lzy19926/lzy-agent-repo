@@ -1,4 +1,4 @@
-import readline from "readline"
+import * as clack from "@clack/prompts"
 
 interface ListItem {
   name: string
@@ -11,54 +11,84 @@ interface TerminalUIOptions {
 }
 
 export default class TerminalUI {
-  private rl: readline.Interface
   private onInput?: (input: string) => Promise<string> | string
+  private promptText: string
+  private isRunning: boolean = true
 
   constructor(options: TerminalUIOptions = {}) {
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      prompt: options.prompt || "🧑>-- ",
-    })
+    this.promptText = options.prompt || "🧑>-- "
     this.onInput = options.onInput
     this.showWelcome()
-    this.rl.on("line", async (input: string) => {
-      if (this.onInput) {
-       const text =  await this.onInput(input.trim())
-       this.print(text,"🤖 >--")
+    // 启动输入循环
+    this.startInputLoop()
+  }
+
+  // 启动输入循环
+  private async startInputLoop(): Promise<void> {
+    while (this.isRunning) {
+      // 手动打印提示，和输入在同一行
+      process.stdout.write(this.promptText)
+
+      const input = await clack.text({
+        message: "",
+        defaultValue: "",
+      })
+
+      if (clack.isCancel(input)) {
+        this.close()
+        return
       }
-      this.rl.prompt()
-    })
+
+      const trimInput = (input as string).trim()
+      if (!trimInput) continue
+
+      try {
+        if (this.onInput) {
+          const text = await this.onInput(trimInput)
+          if (text) {
+            this.print(text, "🤖 >--")
+          }
+        }
+      } catch (e: unknown) {
+        const error = e as Error
+        this.printError(`处理失败: ${error.message}`)
+      }
+    }
   }
 
   // 输出信息
   print(message: string, prefix = "🤖> "): void {
-    console.log(`${prefix}${message}`)
+    clack.log.info(`${prefix}${message}`)
   }
 
   // 输出错误信息
   printError(message: string): void {
-    console.error(`❌> ${message}`)
+    clack.log.error(`❌> ${message}`)
   }
 
   // 输出成功信息
   printSuccess(message: string): void {
-    console.log(`✅> ${message}`)
+    clack.log.success(`✅> ${message}`)
+  }
+
+  // 输出提示信息
+  printInfo(message: string): void {
+    clack.log.info(`ℹ️>  ${message}`)
   }
 
   // 输出列表
   printList(items: ListItem[], title = ""): void {
     if (title) {
-      console.log(`\n${title}`)
+      clack.log.info(`\n${title}`)
     }
     items.forEach((item, index) => {
-      console.log(
+      clack.log.info(
         `${index + 1}. ${item.name}${
           item.description ? ` - ${item.description}` : ""
         }`
       )
     })
-    console.log()
+    clack.log.info("")
   }
 
   // 清屏
@@ -68,20 +98,40 @@ export default class TerminalUI {
 
   // 显示欢迎信息
   showWelcome(): void {
-    console.log(`
-╔════════════════════════════════════════╗
-║        🤖 LZY Agent CLI v1.0.0         ║
-╚════════════════════════════════════════╝
-输入 /help 查看所有可用命令
-开始和Agent对话吧！
-`)
-    this.rl.prompt()
+    clack.intro("🤖 LZY Agent CLI v1.0.0")
+    clack.log.info("输入 /help 查看所有可用命令")
+    clack.log.info("开始和Agent对话吧！\n")
   }
 
   // 关闭终端
   close(): void {
-    this.rl.close()
-    console.log("\n👋 再见！")
+    this.isRunning = false
+    clack.outro("👋 再见！")
     process.exit(0)
+  }
+
+  // 交互式选择菜单
+  async select<T>(
+    options: { name: string; value: T; description?: string }[],
+    title?: string,
+    onSelected?: (res: T) => any
+  ): Promise<T | null> {
+    const selected = await clack.select({
+      message: title || "请选择：",
+      //@ts-ignore
+      options: options.map(opt => ({
+        label: opt.name,
+        value: opt.value,
+        description: opt.description
+      })),
+    })
+
+    if (clack.isCancel(selected)) {
+      return null
+    }
+
+    // 执行回调
+    onSelected?.(selected as T)
+    return selected as T
   }
 }
