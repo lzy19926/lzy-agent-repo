@@ -133,6 +133,30 @@ export default class Agent {
   }
 
   /**
+   * 获取Agent元数据信息
+   * @returns 包含Agent基础信息、工具列表、模型信息、当前技能的元数据对象
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      description: this.description,
+      model: {
+        name: this.model.name,
+      },
+      tools: this.toolsManager.getToolDefinitions().map(tool => ({
+        name: tool.function.name,
+        description: tool.function.description,
+      })),
+      currentSkill: this.currentSkill
+        ? {
+            name: this.currentSkill.name,
+            description: this.currentSkill.description,
+          }
+        : null,
+    }
+  }
+
+  /**
    * 开始对话
    * @param messages 初始消息列表
    * @param signal 可选的中止信号，用于取消请求

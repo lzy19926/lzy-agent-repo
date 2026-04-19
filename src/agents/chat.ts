@@ -2,7 +2,7 @@
  * 极简LLM交互实现，仅使用fetch进行API调用
  */
 import type { Model, Context, AgentMessage } from "../types/types"
-import { messageToLLM } from "./Messages"
+import { messageToLLM_OpenAI } from "./Messages"
 import OpenAI from "openai"
 
 const call_OpenAI = async (
@@ -15,11 +15,10 @@ const call_OpenAI = async (
   const tools = context.tools || []
 
   const openai = new OpenAI({ apiKey, baseURL })
-  const historyMessages = context.messages.map((msg) => messageToLLM(msg))
+  const historyMessages = context.messages.map((msg) => messageToLLM_OpenAI(msg))
 
   const response = await openai.chat.completions.create({
     model: model.name,
-    //@ts-ignore
     messages: [...historyMessages],
     tools: tools,
   })
