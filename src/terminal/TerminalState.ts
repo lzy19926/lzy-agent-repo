@@ -1,23 +1,18 @@
 import eventBus from "../bus/EventBus"
+import { formatDuration } from "../utils"
+import { ANSI_COLORS, TIME_THRESHOLDS, SPINNER_CHARS, THINKING_TEXTS } from "../constant/terminal"
 /**
  * 终端状态指示器封装
  * 负责管理LLM请求的等待时间、待执行工具、运行中技能等状态的显示，包括颜色变化和定时更新
  */
-
-// ANSI 颜色代码
-const ANSI_COLORS = {
-  GRAY: "\x1b[90m",
-  YELLOW: "\x1b[33m",
-  RED: "\x1b[31m",
-  RESET: "\x1b[0m",
-  CLEAR_LINE: "\x1b[2K\r", // 清除当前行并回到行首
-}
 
 export default class TerminalState {
   private stateTimer: NodeJS.Timeout | null = null // 状态更新计时器
   private currentWaitTime: number = 0 // 当前等待时间（秒）
   private pendingTools: string[] = [] // 当前待执行的工具列表
   private currentSkill: string | null = null // 当前正在执行的技能
+  private spinnerFrame: number = 0 // 加载动画当前帧索引
+  private currentThinkingText: string = "思考中" // 当前随机思考文案
 
   constructor() {
     this.subscribeAllEvents()
@@ -54,41 +49,45 @@ export default class TerminalState {
    */
   updateStateIndicator(seconds: number): void {
     let timeColor = ANSI_COLORS.GRAY
-    if (seconds >= 15 && seconds < 30) {
+    if (seconds >= TIME_THRESHOLDS.YELLOW && seconds < TIME_THRESHOLDS.ORANGE) {
       timeColor = ANSI_COLORS.YELLOW
-    } else if (seconds >= 30) {
+    } else if (
+      seconds >= TIME_THRESHOLDS.ORANGE &&
+      seconds < TIME_THRESHOLDS.RED
+    ) {
+      timeColor = ANSI_COLORS.ORANGE
+    } else if (seconds >= TIME_THRESHOLDS.RED) {
       timeColor = ANSI_COLORS.RED
     }
 
-    // 构造显示内容：工具 -> 技能 -> 等待时间
-    let displayContent = ""
+    // 获取当前加载动画字符
+    const spinnerChar = SPINNER_CHARS[this.spinnerFrame % SPINNER_CHARS.length]
+    this.spinnerFrame++
+
+    // 转换秒数为分秒格式
+    const timeDisplay = formatDuration(seconds)
+
+    // 构造显示内容：[转圈圈] 思考中… (时间 | toolCalling | skill)
+    // 括号和分隔符使用灰色
+    let bracketContent = `${timeColor}${timeDisplay}${ANSI_COLORS.RESET}`
 
     // 添加工具列表信息
     if (this.pendingTools.length > 0) {
-      displayContent += `${ANSI_COLORS.GRAY}Tools: ${this.pendingTools.join(
-        ", "
-      )}${ANSI_COLORS.RESET}`
+      bracketContent += `${ANSI_COLORS.GRAY} | ${ANSI_COLORS.RESET}${
+        ANSI_COLORS.GRAY
+      }toolCalling: ${this.pendingTools.join(", ")}${ANSI_COLORS.RESET}`
     }
 
     // 添加当前技能信息
     if (this.currentSkill) {
-      if (displayContent) displayContent += " | "
-      displayContent += `${ANSI_COLORS.GRAY}Skill: ${this.currentSkill}${ANSI_COLORS.RESET}`
+      bracketContent += `${ANSI_COLORS.GRAY} | ${ANSI_COLORS.RESET}${ANSI_COLORS.GRAY}skill: ${this.currentSkill}${ANSI_COLORS.RESET}`
     }
 
-    // 添加等待时间信息（始终在最后）
-    if (displayContent) displayContent += " | "
-    displayContent += `(${timeColor}Waiting: ${seconds}s${ANSI_COLORS.RESET})`
+    // 括号使用灰色，转圈圈和思考文案使用深蓝色
+    const displayContent = `${ANSI_COLORS.LIGHT_BLUE}${spinnerChar} ${this.currentThinkingText}… ${ANSI_COLORS.RESET}${ANSI_COLORS.GRAY}(${ANSI_COLORS.RESET}${bracketContent}${ANSI_COLORS.GRAY})${ANSI_COLORS.RESET}`
 
-    // 计算终端宽度，实现完全右对齐（需要先移除ANSI颜色代码计算实际显示长度）
-    const terminalWidth = process.stdout.columns || 80
-    const visibleLength = displayContent.replace(/\x1b\[[0-9;]*m/g, "").length
-    const paddingLength = Math.max(0, terminalWidth - visibleLength)
-
-    // 清除当前行并右对齐显示内容
-    process.stdout.write(
-      `${ANSI_COLORS.CLEAR_LINE}${" ".repeat(paddingLength)}${displayContent}`
-    )
+    // 清除当前行并左对齐显示内容
+    process.stdout.write(`${ANSI_COLORS.CLEAR_LINE}${displayContent}`)
   }
 
   /**
@@ -99,6 +98,11 @@ export default class TerminalState {
 
     this.pendingTools = []
     this.currentWaitTime = 0
+    this.spinnerFrame = 0
+    // 随机选择思考文案
+    this.currentThinkingText = THINKING_TEXTS[Math.floor(Math.random() * THINKING_TEXTS.length)]
+    // 上方空一行
+    process.stdout.write("\n")
     this.updateStateIndicator(0)
 
     // 每秒更新一次
@@ -112,6 +116,8 @@ export default class TerminalState {
    * 停止并清除状态指示器
    */
   clearStateIndicator(): void {
+    // 下方空一行
+    process.stdout.write("\n")
     if (this.stateTimer) {
       clearInterval(this.stateTimer)
       this.stateTimer = null

@@ -68,3 +68,16 @@ export function safeJsonParse<T = any>(
     return defaultValue
   }
 }
+
+/**
+ * 格式化秒数为分秒显示格式
+ * @param seconds 秒数
+ * @returns 格式化后的字符串，如 "45s"、"4m 45s"
+ */
+export function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return minutes > 0
+    ? `${minutes}m ${remainingSeconds}s`
+    : `${remainingSeconds}s`
+}

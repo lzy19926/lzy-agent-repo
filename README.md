@@ -10,7 +10,7 @@
 - ✅ 多Agent架构，支持不同角色的专业Agent切换，每个Agent拥有独立记忆
 - ✅ 多Agent通信，Agent之间可以互相发送消息、委托任务，支持灵活的多Agent协作
 - ✅ 分层上下文记忆，短期记忆支持持久化到本地文件，会话永不丢失
-- ✅ 原生对接LLM大模型，默认支持智谱GLM-4系列，可扩展其他模型
+- ✅ 原生对接LLM大模型，默认支持字节跳动DeepSeek系列，可扩展其他兼容OpenAI接口的模型
 - ✅ 内置多种实用命令，支持Agent切换、技能管理等操作
 - ✅ 完全TypeScript编写，类型安全，易于维护和扩展
 
@@ -75,6 +75,13 @@ npm run dev
 // 例如用户问："把'你好'发送给code-agent"，Agent会自动调用此工具转发消息
 ```
 
+### Agent信息查询工具
+支持查询所有可用Agent的信息，包括名称、描述、当前使用的模型等：
+```typescript
+// Agent会自动根据用户需求调用此工具
+// 例如用户问："当前有哪些可用的Agent"，Agent会自动调用此工具查询
+```
+
 如需添加更多系统工具，可以在 `src/tools/` 目录下编写，然后在 `src/index.ts` 中注册：
 ```typescript
 toolsManager.register(YourTool, YourToolDefinition)
@@ -106,7 +113,8 @@ toolsManager.register(YourTool, YourToolDefinition)
 │   │   ├── PowerShellTool.ts # PowerShell命令执行工具
 │   │   ├── BashTool.ts # Bash命令执行工具
 │   │   ├── WebSearchTool.ts # 网页搜索工具
-│   │   └── SendMessageToAgentTool.ts # Agent间消息转发工具
+│   │   ├── SendMessageTool.ts # Agent间消息转发工具
+│   │   └── GetAgentInfoTool.ts # Agent信息查询工具
 │   ├── types/            # TypeScript类型定义
 │   ├── utils/            # 工具函数
 │   ├── bus/              # 事件总线（可选）
