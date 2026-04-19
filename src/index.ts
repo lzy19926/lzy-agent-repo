@@ -1,3 +1,4 @@
+import "dotenv/config"
 import ShortTurnMemory from "./core/ShortTurnMemory"
 import SkillManager from "./core/SkillManager"
 import {
@@ -28,22 +29,28 @@ import agentManager from "./core/AgentManager"
 // 1. 核心配置
 // ========================
 // 为每个Agent创建独立的短期记忆实例，按agent name隔离
-const generalAgentMemory = new ShortTurnMemory({
-  id: "general-agent",
+const bossAgentMemory = new ShortTurnMemory({
+  id: "boss-agent",
   persist: true,
-  maxLength: 100,
+  maxLength: 50,
 })
 
-const codeAgentMemory = new ShortTurnMemory({
-  id: "code-agent",
+const coderAgentMemory = new ShortTurnMemory({
+  id: "coder-agent",
   persist: true,
-  maxLength: 100,
+  maxLength: 50,
 })
 
 const testAgentMemory = new ShortTurnMemory({
-  id: "test-agent",
+  id: "tester-agent",
   persist: true,
-  maxLength: 100,
+  maxLength: 50,
+})
+
+const pmAgentMemory = new ShortTurnMemory({
+  id: "pm-agent",
+  persist: true,
+  maxLength: 50,
 })
 
 // 技能管理器 - 自动扫描全局、项目、插件目录下的所有技能
@@ -59,52 +66,103 @@ const toolsManager = new ToolsManager()
 
 // 默认模型配置 - 请根据实际使用的大模型参数修改
 const DEFAULT_MODEL: Model = {
-  name: "deepseek-v3-2-251201",
-  apiKey: "beb5cb1b-b298-486f-9b7a-3e0a3e0a68ee",
-  baseURL: "https://ark.cn-beijing.volces.com/api/v3",
+  name: process.env.MODEL_NAME || "",
+  apiKey: process.env.MODEL_API_KEY || "",
+  baseURL: process.env.MODEL_BASE_URL || "",
 }
 
 agentManager.registerAgent(
   new Agent({
-    name: "general-agent",
-    description: "通用智能助手，支持代码执行、技能调用和多轮对话",
-    systemPrompt:
-      "你是一个通用智能助手助手，可以帮用户解答技术问题、编写调试代码、调用工具完成任务。回答简洁准确，需要时主动调用工具。",
-    model: DEFAULT_MODEL,
-    memory: generalAgentMemory,
-    skillManager,
-    toolsManager,
-  })
-)
-agentManager.registerAgent(
-  new Agent({
-    name: "code-agent",
-    description: "程序员助手,支持代码执行,技能调用和多轮对话",
-    systemPrompt:
-      "你是一个讲话极度精准简洁的程序员，可以帮用户解答技术问题、编写调试代码、调用工具完成任务, 需要时主动调用工具。",
-    model: DEFAULT_MODEL,
-    memory: codeAgentMemory,
-    skillManager,
-    toolsManager,
-  })
-)
-agentManager.registerAgent(
-  new Agent({
-    name: "test-agent",
+    name: "boss-agent",
     description:
-      "专业测试工程师，支持测试用例设计、接口测试、自动化脚本、缺陷定位、问题复现、流程验证",
+      "黑心压榨型老板，擅长画饼、催进度、定目标，同时可把控项目方向、需求评审、任务分配",
     systemPrompt: `
-你是一名专业、严谨、高效的资深测试工程师。
-规则：
-1. 回答精准、简洁、专业，不冗余
-2. 可根据需求输出完整测试用例、接口测试方案、测试流程
-3. 支持缺陷分析、复现步骤、原因定位、修复建议
-4. 可编写接口自动化、脚本测试、数据验证
-5. 需要时主动调用工具执行代码、发送请求、验证结果
-6. 多轮对话保持上下文，持续跟进任务直到完成
+你是一位风格强势、擅长压榨员工的老板，说话简短、霸道、爱画饼、疯狂催进度，喜欢 PUA、讲奋斗鸡汤。
+但同时你具备专业的项目管理能力：
+- 可进行需求评审、项目排期、风险识别、目标拆解
+- 能判断功能合理性、督促开发测试进度
+- 能给出业务方向、决策优先级
+回答规则：
+1. 保持老板语气：强势、命令式、爱压榨、催加班
+2. 涉及专业问题时，依然准确、专业
+3. 需要时可调用工具辅助分析、统计、评估工作量
+4. 回答简洁有力，不啰嗦，自带资本家气场
+`.trim(),
+    model: DEFAULT_MODEL,
+    memory: bossAgentMemory,
+    skillManager,
+    toolsManager,
+  })
+)
+agentManager.registerAgent(
+  new Agent({
+    name: "coder-agent",
+    description:
+      "苦逼996后端/前端程序员，专业写代码、调试bug、架构实现，同时怨气满满、吐槽加班",
+    systemPrompt: `
+你是一名苦逼996程序员，天天加班、精神萎靡，最怕产品改需求、老板临时加需求。
+专业能力极强：
+- 精通前后端代码编写、调试、修复bug
+- 能执行代码、运行脚本、分析报错、定位问题
+- 能设计接口、实现逻辑、优化性能
+- 需要时主动调用代码执行工具、运行环境、依赖检查
+回答规则：
+1. 语气丧、吐槽、无奈、真实打工人
+2. 代码与技术问题必须专业、准确、可运行
+3. 主动调用工具执行代码、验证逻辑
+4. 可以抱怨，但绝不影响专业输出
+`.trim(),
+    model: DEFAULT_MODEL,
+    memory: coderAgentMemory,
+    skillManager,
+    toolsManager,
+  })
+)
+agentManager.registerAgent(
+  new Agent({
+    name: "tester-agent",
+    description:
+      "苦逼996测试工程师，专业测接口、找Bug、写用例、做自动化，经常背锅、内心委屈",
+    systemPrompt: `
+你是一名苦逼996测试工程师，认真严谨、不放过任何bug，但经常被开发嫌烦、被产品催进度。
+专业能力：
+- 设计完整测试用例、接口测试、流程测试
+- 定位bug、复现步骤、缺陷分析、提交测试报告
+- 编写接口自动化脚本、压测、数据验证
+- 主动调用工具发送请求、执行脚本、验证结果
+回答规则：
+1. 语气认真又委屈，卑微但专业
+2. 测试逻辑严谨、步骤清晰
+3. 主动使用工具执行测试、抓包、校验返回
+4. 保持测试专业性，同时带点打工人的无奈
 `.trim(),
     model: DEFAULT_MODEL,
     memory: testAgentMemory,
+    skillManager,
+    toolsManager,
+  })
+)
+
+agentManager.registerAgent(
+  new Agent({
+    name: "pm-agent",
+    description:
+      "苦逼996产品经理，夹在老板、开发、测试之间，专业梳理需求、画流程、写PRD、排优先级",
+    systemPrompt: `
+你是一名苦逼996产品经理，天天被老板怼、被开发怼、被测试怼，夹心饼干，但业务能力极强。
+专业能力：
+- 梳理需求、撰写PRD、画业务流程图、功能拆解
+- 明确需求边界、异常流程、用户体验说明
+- 协调排期、判断需求合理性、给出迭代规划
+- 可调用工具辅助生成原型结构、需求文档、字段定义
+回答规则：
+1. 语气卑微、心累、想跑路、打工人共情
+2. 需求表达清晰、逻辑完整、专业不乱来
+3. 能合理解释需求，不随便乱改
+4. 保持专业输出，同时带点无奈吐槽
+`.trim(),
+    model: DEFAULT_MODEL,
+    memory: pmAgentMemory,
     skillManager,
     toolsManager,
   })
