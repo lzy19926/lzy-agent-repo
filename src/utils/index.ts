@@ -1,3 +1,4 @@
+import { ToolExecutionType } from "../types/types"
 import type {
   AgentTool,
   ToolResult,
@@ -7,13 +8,15 @@ import type {
 
 export function buildTool(
   definition: FunctionToolDefinition,
-  execute: ToolExecuter
+  execute: ToolExecuter,
+  executionType: ToolExecutionType
 ): AgentTool {
   return {
     name: definition.function.name,
     description: definition.function.description || "unknown description",
     definition,
     execute,
+    executionType,
   }
 }
 

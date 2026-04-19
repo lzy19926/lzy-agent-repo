@@ -1,5 +1,6 @@
 import { spawn } from "child_process"
 import { buildTool } from "../utils"
+import { ToolExecutionType } from "../types/types"
 import type { ToolResult, FunctionToolDefinition } from "../types/types"
 
 const definition: FunctionToolDefinition = {
@@ -120,4 +121,4 @@ const executeBashTool = async (
   }
 }
 
-export const BashTool = buildTool(definition, executeBashTool)
+export const BashTool = buildTool(definition, executeBashTool, ToolExecutionType.SEQUENTIAL)

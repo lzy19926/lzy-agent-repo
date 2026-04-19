@@ -1,4 +1,5 @@
 import { buildTool } from "../utils"
+import { ToolExecutionType } from "../types/types"
 import type {
   ToolResult,
   FunctionToolDefinition,
@@ -82,4 +83,4 @@ async function executeSendMessageTool(
   }
 }
 
-export const SendMessageTool = buildTool(definition, executeSendMessageTool)
+export const SendMessageTool = buildTool(definition, executeSendMessageTool, ToolExecutionType.PARALLEL)

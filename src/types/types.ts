@@ -76,6 +76,12 @@ export type Message =
   | ToolResultMessage
   | OtherAssistantMessage
 
+// 工具执行类型
+export enum ToolExecutionType {
+  PARALLEL = "parallel", // 可并行执行
+  SEQUENTIAL = "sequential" // 必须串行执行
+}
+
 // 工具参数定义
 export type ToolParameter = { [key: string]: unknown }
 export type ToolExecuter<T = any> = (input: T, signal?: AbortSignal) => Promise<ToolResult>
@@ -86,6 +92,7 @@ export interface AgentTool {
   description: string
   definition: FunctionToolDefinition
   execute: ToolExecuter
+  executionType: ToolExecutionType // 工具执行类型
 }
 
 export interface ToolResult {

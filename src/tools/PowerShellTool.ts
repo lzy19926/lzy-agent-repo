@@ -1,5 +1,6 @@
 import { spawn } from "child_process"
 import { buildTool } from "../utils"
+import { ToolExecutionType } from "../types/types"
 import type {
   ToolResult,
   FunctionToolDefinition,
@@ -123,4 +124,4 @@ const executePowerShellTool = async (
   }
 }
 
-export const PowerShellTool = buildTool(definition, executePowerShellTool)
+export const PowerShellTool = buildTool(definition, executePowerShellTool, ToolExecutionType.SEQUENTIAL)

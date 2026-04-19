@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import { buildTool } from "../utils"
+import { ToolExecutionType } from "../types/types"
 import type {
   ToolResult,
   FunctionToolDefinition,
@@ -185,4 +186,4 @@ const executeWebSearchTool = async (
   }
 }
 
-export const WebSearchTool = buildTool(definition, executeWebSearchTool)
+export const WebSearchTool = buildTool(definition, executeWebSearchTool, ToolExecutionType.SEQUENTIAL)

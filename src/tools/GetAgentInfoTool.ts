@@ -1,4 +1,5 @@
 import { buildTool } from "../utils"
+import { ToolExecutionType } from "../types/types"
 import type {
   ToolResult,
   FunctionToolDefinition,
@@ -54,4 +55,4 @@ async function executeGetAgentInfoTool(
   }
 }
 
-export const GetAgentInfoTool = buildTool(definition, executeGetAgentInfoTool)
+export const GetAgentInfoTool = buildTool(definition, executeGetAgentInfoTool, ToolExecutionType.PARALLEL)
