@@ -2,6 +2,7 @@ import type ShortTurnMemory from "../core/ShortTurnMemory"
 import type SkillManager from "../core/SkillManager"
 import type ToolsManager from "../core/ToolsManager"
 import { runAgentLoop } from "./AgentLoop"
+import eventBus from "../bus/EventBus"
 import { buildUserMessage, buildSystemMessage } from "./Messages"
 import type { Message, SkillMeta, Model } from "../types/types"
 
@@ -143,7 +144,7 @@ export default class Agent {
       model: {
         name: this.model.name,
       },
-      tools: this.toolsManager.getToolDefinitions().map(tool => ({
+      tools: this.toolsManager.getToolDefinitions().map((tool) => ({
         name: tool.function.name,
         description: tool.function.description,
       })),
@@ -163,6 +164,8 @@ export default class Agent {
    * @returns 更新后的消息列表，包含助手回复和工具执行结果
    */
   async chat(userInput: string, signal?: AbortSignal): Promise<string> {
+    eventBus.publish("llm:request:start") // 发布LLM请求开始事件
+
     // 1. 保存用户消息到上下文
     this.memory.addMessages([buildUserMessage(userInput)])
 
@@ -181,6 +184,7 @@ export default class Agent {
 
     // 3. 保存Agent消息到上下文
     this.memory.addMessages(responseMessages)
+    eventBus.publish("llm:request:end") // 发布LLM请求结束事件（无论成功失败）
 
     // 4. 返回Agent回答结果
     return this.buildChatResponse(responseMessages)
