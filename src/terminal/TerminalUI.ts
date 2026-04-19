@@ -1,5 +1,5 @@
 import * as clack from "@clack/prompts"
-import TerminalTime from "./TerminalTime"
+import TerminalState from "./TerminalState"
 
 interface ListItem {
   name: string
@@ -17,12 +17,12 @@ export default class TerminalUI {
   private onInput?: (input: string) => OnInputResult
   private promptText: string
   private isRunning: boolean = true
-  private terminalTime: TerminalTime // 等待时间指示器实例
+  private TerminalState: TerminalState
 
   constructor(options: TerminalUIOptions = {}) {
     this.promptText = options.prompt || "🧑>-- "
     this.onInput = options.onInput
-    this.terminalTime = new TerminalTime() // 初始化等待时间指示器
+    this.TerminalState = new TerminalState()
     this.showWelcome()
     // 启动输入循环
     this.startInputLoop()
@@ -112,7 +112,7 @@ export default class TerminalUI {
   // 关闭终端
   close(): void {
     this.isRunning = false
-    this.terminalTime.destroy() // 销毁等待时间指示器资源
+    this.TerminalState.destroy()
     clack.outro("👋 再见！")
     process.exit(0)
   }

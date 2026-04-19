@@ -51,7 +51,6 @@ class ToolsManager {
   async execute(toolName: string, args: Record<string, unknown>): Promise<any> {
     const toolEntry = this.tools.get(toolName)
     if (!toolEntry) throw new Error(`工具 ${toolName} 未注册`)
-    eventBus.publish('tool:execute:start', toolName) // 发布工具执行开始事件
     return toolEntry.tool.execute(args)
   }
 }

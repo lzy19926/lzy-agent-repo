@@ -3,6 +3,7 @@
  */
 import type { AgentLoopConfig, Context, Message } from "../types/types"
 import { callLLM } from "./Chat"
+import eventBus from "../bus/EventBus"
 /**
  * Start a minimal agent loop
  */
@@ -30,9 +31,15 @@ export async function runAgentLoop(
     const toolCalls = assistantMessage.content.filter(
       (c) => c.type === "toolCall"
     )
+
     if (toolCalls.length === 0) {
       break
     }
+
+    // 发送工具调用事件，传递待执行的工具列表，供终端渲染
+    eventBus.publish("event:tools:calling", {
+      toolCalls: toolCalls.map((c) => c.name),
+    })
 
     // Execute tools sequentially
     for (const toolCall of toolCalls) {
