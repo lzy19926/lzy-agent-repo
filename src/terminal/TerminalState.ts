@@ -27,7 +27,6 @@ export default class TerminalState {
     // 订阅事件，处理状态显示
     eventBus.subscribe("llm:request:start", () => {
       this.pendingTools = []
-      this.currentSkill = null
       this.startStateIndicator()
     })
 
@@ -42,6 +41,11 @@ export default class TerminalState {
         this.pendingTools = data.toolCalls
       }
     )
+
+    // 监听技能加载事件，更新当前技能
+    eventBus.subscribe("event:skill:loaded", (skill: { name: string }) => {
+      this.currentSkill = skill.name
+    })
   }
 
   /**
@@ -56,22 +60,30 @@ export default class TerminalState {
       timeColor = ANSI_COLORS.RED
     }
 
-    // 构造显示内容：正文灰色，分隔符正常颜色
-    let displayContent = `(${timeColor}Waiting: ${seconds}s${ANSI_COLORS.RESET})`
+    // 构造显示内容：工具 -> 技能 -> 等待时间
+    let displayContent = ""
 
     // 添加工具列表信息
     if (this.pendingTools.length > 0) {
-      displayContent += ` | ${ANSI_COLORS.GRAY}Tools: ${this.pendingTools.join(", ")}${ANSI_COLORS.RESET}`
+      displayContent += `${ANSI_COLORS.GRAY}Tools: ${this.pendingTools.join(
+        ", "
+      )}${ANSI_COLORS.RESET}`
     }
 
     // 添加当前技能信息
     if (this.currentSkill) {
-      displayContent += ` | ${ANSI_COLORS.GRAY}Skill: ${this.currentSkill}${ANSI_COLORS.RESET}`
+      if (displayContent) displayContent += " | "
+      displayContent += `${ANSI_COLORS.GRAY}Skill: ${this.currentSkill}${ANSI_COLORS.RESET}`
     }
 
-    // 计算终端宽度，实现完全右对齐
+    // 添加等待时间信息（始终在最后）
+    if (displayContent) displayContent += " | "
+    displayContent += `(${timeColor}Waiting: ${seconds}s${ANSI_COLORS.RESET})`
+
+    // 计算终端宽度，实现完全右对齐（需要先移除ANSI颜色代码计算实际显示长度）
     const terminalWidth = process.stdout.columns || 80
-    const paddingLength = Math.max(0, terminalWidth - displayContent.length)
+    const visibleLength = displayContent.replace(/\x1b\[[0-9;]*m/g, "").length
+    const paddingLength = Math.max(0, terminalWidth - visibleLength)
 
     // 清除当前行并右对齐显示内容
     process.stdout.write(
@@ -83,6 +95,9 @@ export default class TerminalState {
    * 启动状态指示器，每秒自动更新
    */
   startStateIndicator(): void {
+    this.clearStateIndicator()
+
+    this.pendingTools = []
     this.currentWaitTime = 0
     this.updateStateIndicator(0)
 
@@ -101,9 +116,9 @@ export default class TerminalState {
       clearInterval(this.stateTimer)
       this.stateTimer = null
     }
-    // 重置工具和技能状态
+    // 重置工具和时间状态
     this.pendingTools = []
-    this.currentSkill = null
+    this.currentWaitTime = 0
   }
 
   /**

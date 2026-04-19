@@ -19,6 +19,7 @@ import TerminalUI from "./terminal/TerminalUI"
 import CommandExecuter from "./terminal/CommandExecuter"
 import type { Model } from "./types/types"
 import Agent from "./agents/Agent"
+import { buildUserMessage } from "./agents/Messages"
 
 // Agent管理 - 管理多Agent实例，共享核心依赖（单例模式）
 import agentManager from "./core/AgentManager"
@@ -129,7 +130,8 @@ const terminalUI = new TerminalUI({
         return { content: "", agentName }
       }
       // 输出对话
-      const content = await currentAgent.chat(trimInput)
+      const userMessage = buildUserMessage(trimInput)
+      const content = await currentAgent.chat(userMessage)
       return { content, agentName }
     } catch (e: unknown) {
       return terminalUI.printError(`处理失败: ${(e as Error)?.message}`)

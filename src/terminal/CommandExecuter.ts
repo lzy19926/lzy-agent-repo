@@ -52,8 +52,8 @@ export default class CommandExecuter {
     process.stdin.on("data", (data) => {
       const key = data.toString("binary")
 
-      // ctrl+c esc时执行数据清理
-      if (key === "\u0003" || key === "\x1b") {
+      // ctrl+c 时执行数据清理
+      if (key === "\u0003") {
         eventBus.publish("event:app:exit")
         this.terminalUI.close()
         setTimeout(() => process.exit(0), 100)

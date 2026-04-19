@@ -4,6 +4,7 @@ import type {
   UserMessage,
   AgentMessage,
   ToolResultMessage,
+  OtherAssistantMessage,
 } from "../types/types"
 import type OpenAI from "openai"
 
@@ -11,6 +12,14 @@ export const buildUserMessage = (userInput: string): UserMessage => {
   return {
     role: "user",
     content: [{ type: "text", text: userInput }],
+    timestamp: Date.now(),
+  }
+}
+
+export const buildOtherAssistantMessage = (message: string): OtherAssistantMessage => {
+  return {
+    role: "otherAssistant",
+    content: [{ type: "text", text: message }],
     timestamp: Date.now(),
   }
 }
@@ -44,7 +53,7 @@ export const messageToLLM_OpenAI = (msg: Message): OpenAI.Chat.ChatCompletionMes
     }
   }
 
-  if (msg.role === "user") {
+  if (msg.role === "user" || msg.role === "otherAssistant") {
     return {
       role: "user",
       content: getTextContent(),

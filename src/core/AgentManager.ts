@@ -52,6 +52,13 @@ class AgentManager {
     // 订阅Agent切换命令
     commandBus.register("command:agent:switch", (agentName: string) => {
       const currentAgent = this.switchAgent(agentName)
+      const success = currentAgent ? true : false
+
+      // 成功时发布Agent切换事件
+      if (success) {
+        eventBus.publish("event:agent:switched", currentAgent)
+      }
+
       return {
         success: currentAgent ? true : false,
         agent: currentAgent,
@@ -70,6 +77,12 @@ class AgentManager {
       try {
         const currentAgent = this.getCurrentAgent()
         const success = currentAgent.loadSkill(skillName)
+
+        // 成功时发布技能加载事件
+        if (success) {
+          eventBus.publish("event:skill:loaded", currentAgent.currentSkill)
+        }
+
         return { success }
       } catch (e) {
         return { success: false, message: (e as Error).message }

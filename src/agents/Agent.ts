@@ -3,7 +3,7 @@ import type SkillManager from "../core/SkillManager"
 import type ToolsManager from "../core/ToolsManager"
 import { runAgentLoop } from "./AgentLoop"
 import eventBus from "../bus/EventBus"
-import { buildUserMessage, buildSystemMessage } from "./Messages"
+import { buildSystemMessage } from "./Messages"
 import type { Message, SkillMeta, Model } from "../types/types"
 
 interface ReplyThought {
@@ -159,15 +159,18 @@ export default class Agent {
 
   /**
    * 开始对话
-   * @param messages 初始消息列表
+   * @param message 输入消息对象（user/otherAssistant等类型）
    * @param signal 可选的中止信号，用于取消请求
    * @returns 更新后的消息列表，包含助手回复和工具执行结果
    */
-  async chat(userInput: string, signal?: AbortSignal): Promise<string> {
-    eventBus.publish("llm:request:start") // 发布LLM请求开始事件
+  async chat(message: Message, signal?: AbortSignal): Promise<string> {
+    // 只有用户发起的请求才发布LLM请求开始事件
+    if (message.role === "user") {
+      eventBus.publish("llm:request:start")
+    }
 
-    // 1. 保存用户消息到上下文
-    this.memory.addMessages([buildUserMessage(userInput)])
+    // 1. 直接保存传入的消息到上下文
+    this.memory.addMessages([message])
 
     // 2. 调用AgentLoop执行对话，传入当前所有上下文消息
     const loopConfig = {
@@ -184,7 +187,11 @@ export default class Agent {
 
     // 3. 保存Agent消息到上下文
     this.memory.addMessages(responseMessages)
-    eventBus.publish("llm:request:end") // 发布LLM请求结束事件（无论成功失败）
+
+    // 只有用户发起的请求才发布LLM请求结束事件
+    if (message.role === "user") {
+      eventBus.publish("llm:request:end")
+    }
 
     // 4. 返回Agent回答结果
     return this.buildChatResponse(responseMessages)

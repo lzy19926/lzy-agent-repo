@@ -4,6 +4,7 @@ import type {
   FunctionToolDefinition,
 } from "../types/types"
 import agentManager from "../core/AgentManager"
+import { buildOtherAssistantMessage } from "../agents/Messages"
 
 const definition: FunctionToolDefinition = {
   type: "function",
@@ -52,8 +53,9 @@ async function executeSendMessageTool(
       }
     }
 
-    // 给目标Agent发送消息
-    const response = await targetAgent.chat(message)
+    // 给目标Agent发送消息（构建otherAssistant类型消息，不触发外层计时）
+    const agentMessage = buildOtherAssistantMessage(message)
+    const response = await targetAgent.chat(agentMessage)
 
     return {
       type: "text",
