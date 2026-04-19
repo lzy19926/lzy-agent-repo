@@ -10,6 +10,10 @@ import {
   SendMessageTool,
   SendMessageToolDefinition,
 } from "./tools/SendMessageTool"
+import {
+  GetAgentInfoTool,
+  GetAgentInfoToolDefinition,
+} from "./tools/GetAgentInfoTool"
 import ToolsManager from "./core/ToolsManager"
 import TerminalUI from "./terminal/TerminalUI"
 import CommandExecuter from "./terminal/CommandExecuter"
@@ -41,8 +45,6 @@ const testAgentMemory = new ShortTurnMemory({
   maxLength: 100,
 })
 
-
-
 // 技能管理器 - 自动扫描全局、项目、插件目录下的所有技能
 const skillManager = new SkillManager()
 
@@ -52,6 +54,7 @@ const toolsManager = new ToolsManager()
   .register(BashTool, BashToolDefinition)
   .register(WebSearchTool, WebSearchToolDefinition)
   .register(SendMessageTool, SendMessageToolDefinition)
+  .register(GetAgentInfoTool, GetAgentInfoToolDefinition)
 
 // 默认模型配置 - 请根据实际使用的大模型参数修改
 const DEFAULT_MODEL: Model = {
