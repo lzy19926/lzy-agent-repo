@@ -1,6 +1,7 @@
 import eventBus from "../bus/EventBus"
 import { formatDuration } from "../utils"
 import { ANSI_COLORS, TIME_THRESHOLDS, SPINNER_CHARS, THINKING_TEXTS } from "../constant/terminal"
+import { EVENT } from "../constant/bus"
 /**
  * 终端状态指示器封装
  * 负责管理LLM请求的等待时间、待执行工具、运行中技能等状态的显示，包括颜色变化和定时更新
@@ -31,14 +32,14 @@ export default class TerminalState {
 
     // 监听工具调用事件，保存待执行的工具列表
     eventBus.subscribe(
-      "event:tools:calling",
+      EVENT.TOOLS.CALLING,
       (data: { toolCalls: string[] }) => {
         this.pendingTools = data.toolCalls
       }
     )
 
     // 监听技能加载事件，更新当前技能
-    eventBus.subscribe("event:skill:loaded", (skill: { name: string }) => {
+    eventBus.subscribe(EVENT.SKILL.LOADED, (skill: { name: string }) => {
       this.currentSkill = skill.name
     })
   }

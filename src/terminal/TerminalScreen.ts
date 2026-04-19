@@ -1,6 +1,7 @@
 import chalk from "chalk"
 import boxen from "boxen"
 import commandBus from "../bus/CommandBus"
+import { COMMAND } from "../constant/bus"
 
 export default class TerminalScreen {
   /**
@@ -27,7 +28,7 @@ export default class TerminalScreen {
     const tips = " ".repeat(tipsPadding) + chalk.gray(tipsText)
 
     // 获取已注册的Agent列表
-    const { agents } = await commandBus.invoke("command:agent:list")
+    const { agents } = await commandBus.invoke(COMMAND.AGENT.LIST)
     // Agent列表左对齐，加左边距
     const agentList = agents
       .map(

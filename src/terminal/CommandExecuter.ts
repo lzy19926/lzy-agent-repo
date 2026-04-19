@@ -1,5 +1,6 @@
 import eventBus from "../bus/EventBus"
 import commandBus from "../bus/CommandBus"
+import { EVENT, COMMAND } from "../constant/bus"
 import type TerminalUI from "./TerminalUI"
 import type Agent from "../agents/Agent"
 
@@ -54,7 +55,7 @@ export default class CommandExecuter {
 
       // ctrl+c 时执行数据清理
       if (key === "\u0003") {
-        eventBus.publish("event:app:exit")
+        eventBus.publish(EVENT.APP.EXIT)
         this.terminalUI.close()
         setTimeout(() => process.exit(0), 100)
       }
@@ -122,7 +123,7 @@ export default class CommandExecuter {
 
   exit(): void {
     // 发布退出事件，通知外部处理清理工作
-    eventBus.publish("event:app:exit")
+    eventBus.publish(EVENT.APP.EXIT)
     this.terminalUI.close()
     setTimeout(() => process.exit(0), 100)
   }
@@ -130,7 +131,7 @@ export default class CommandExecuter {
   clear(): void {
     this.terminalUI.clear()
     // 发布清空会话事件，由外部处理记忆清空
-    eventBus.publish("event:session:clear")
+    eventBus.publish(EVENT.SESSION.CLEAR)
     this.terminalUI.printSuccess("已清屏并清空当前会话上下文")
   }
 
@@ -158,7 +159,7 @@ export default class CommandExecuter {
   async listAgents(): Promise<void> {
     // 1. 获取Agent列表和当前Agent（回调转Promise）
     const { agents, currentAgent } = await commandBus.invoke(
-      "command:agent:list"
+      COMMAND.AGENT.LIST
     )
 
     // 2. 构造选择项
@@ -178,7 +179,7 @@ export default class CommandExecuter {
 
     // 4. 切换Agent（回调转Promise）
     const { success, agent } = await commandBus.invoke(
-      "command:agent:switch",
+      COMMAND.AGENT.SWITCH,
       selectedAgent.name
     )
     // 5. 处理结果
@@ -194,7 +195,7 @@ export default class CommandExecuter {
   async listSkills(): Promise<void> {
     // 1. 获取技能列表和已加载技能（回调转Promise）
     const { skills, loadedSkillName } = await commandBus.invoke(
-      "command:skill:list"
+      COMMAND.SKILL.LIST
     )
 
     if (skills.length === 0) {
@@ -219,7 +220,7 @@ export default class CommandExecuter {
 
     // 4. 加载技能（调用CommandBus）
     const { success, message } = await commandBus.invoke(
-      "command:skill:load",
+      COMMAND.SKILL.LOAD,
       selectedSkill.name
     )
 

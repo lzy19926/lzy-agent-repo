@@ -1,6 +1,7 @@
 import type Agent from "../agents/Agent"
 import eventBus from "../bus/EventBus"
 import commandBus from "../bus/CommandBus"
+import { EVENT, COMMAND } from "../constant/bus"
 
 class AgentManager {
   private static instance: AgentManager
@@ -26,14 +27,14 @@ class AgentManager {
   // ========================
   private subscribeAllEvents() {
     // 订阅应用退出事件
-    eventBus.subscribe("event:app:exit", () => {
+    eventBus.subscribe(EVENT.APP.EXIT, () => {
       // 退出前清除当前Agent记忆
       const currentAgent = this.getCurrentAgent()
       currentAgent.memory.clear()
     })
 
     // 订阅会话清空事件
-    eventBus.subscribe("event:session:clear", () => {
+    eventBus.subscribe(EVENT.SESSION.CLEAR, () => {
       const currentAgent = this.getCurrentAgent()
       currentAgent.memory.clear()
     })
@@ -43,20 +44,20 @@ class AgentManager {
   // ========================
   private registerAllCommands() {
     // 订阅Agent列表查询命令
-    commandBus.register("command:agent:list", () => {
+    commandBus.register(COMMAND.AGENT.LIST, () => {
       return {
         agents: this.getAgents(),
         currentAgent: this.getCurrentAgent(),
       }
     })
     // 订阅Agent切换命令
-    commandBus.register("command:agent:switch", (agentName: string) => {
+    commandBus.register(COMMAND.AGENT.SWITCH, (agentName: string) => {
       const currentAgent = this.switchAgent(agentName)
       const success = currentAgent ? true : false
 
       // 成功时发布Agent切换事件
       if (success) {
-        eventBus.publish("event:agent:switched", currentAgent)
+        eventBus.publish(EVENT.AGENT.SWITCHED, currentAgent)
       }
 
       return {
@@ -65,7 +66,7 @@ class AgentManager {
       }
     })
     // 订阅技能列表查询命令
-    commandBus.register("command:skill:list", () => {
+    commandBus.register(COMMAND.SKILL.LIST, () => {
       const currentAgent = this.getCurrentAgent()
       return {
         skills: currentAgent.skillManager.getSkills(),
@@ -73,14 +74,14 @@ class AgentManager {
       }
     })
     // 订阅技能加载命令
-    commandBus.register("command:skill:load", (skillName: string) => {
+    commandBus.register(COMMAND.SKILL.LOAD, (skillName: string) => {
       try {
         const currentAgent = this.getCurrentAgent()
         const success = currentAgent.loadSkill(skillName)
 
         // 成功时发布技能加载事件
         if (success) {
-          eventBus.publish("event:skill:loaded", currentAgent.currentSkill)
+          eventBus.publish(EVENT.SKILL.LOADED, currentAgent.currentSkill)
         }
 
         return { success }
