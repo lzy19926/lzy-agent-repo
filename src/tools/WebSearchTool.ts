@@ -1,7 +1,7 @@
 // 原理 调用DuckDuckGo搜索API进行搜索, 不直接使用LLM内置的web_search能力
 
 import { z } from "zod"
-import { buildTool } from "./utils"
+import { buildTool } from "../utils"
 import type {
   ToolResult,
   FunctionToolDefinition,

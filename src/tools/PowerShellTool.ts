@@ -1,5 +1,5 @@
 import { spawn } from "child_process"
-import { buildTool } from "./utils"
+import { buildTool } from "../utils"
 import type {
   ToolResult,
   FunctionToolDefinition,
