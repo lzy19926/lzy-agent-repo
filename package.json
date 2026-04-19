@@ -45,12 +45,17 @@
   "homepage": "https://github.com/lzy19926/lzy-agent-repo#readme",
   "dependencies": {
     "@clack/prompts": "^1.2.0",
+    "boxen": "^8.0.1",
+    "figlet": "^1.11.0",
     "front-matter": "^4.0.2",
+    "marked": "^15.0.12",
+    "marked-terminal": "^7.3.0",
     "openai": "^6.34.0",
     "yaml": "^2.8.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/marked-terminal": "^6.1.1",
     "@types/node": "^25.6.0",
     "typescript": "^6.0.3"
   }

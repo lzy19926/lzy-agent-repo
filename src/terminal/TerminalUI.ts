@@ -1,5 +1,7 @@
 import * as clack from "@clack/prompts"
 import TerminalState from "./TerminalState"
+import TerminalScreen from "./TerminalScreen"
+import marked from "./TerminalMD"
 
 interface ListItem {
   name: string
@@ -18,12 +20,20 @@ export default class TerminalUI {
   private promptText: string
   private isRunning: boolean = true
   private TerminalState: TerminalState
+  private terminalScreen: TerminalScreen
 
   constructor(options: TerminalUIOptions = {}) {
     this.promptText = options.prompt || "🧑>-- "
     this.onInput = options.onInput
     this.TerminalState = new TerminalState()
-    this.showWelcome()
+    this.terminalScreen = new TerminalScreen()
+    // 异步显示欢迎界面，然后启动输入循环
+    this.init()
+  }
+
+  private async init() {
+    await this.terminalScreen.showWelcome()
+
     // 启动输入循环
     this.startInputLoop()
   }
@@ -52,7 +62,7 @@ export default class TerminalUI {
           const { content, agentName } = await this.onInput(trimInput)
           if (content) {
             clack.log.info(`🤖[${agentName}]`)
-            clack.log.info(content)
+            clack.log.info(await marked.parse(content))
           }
         }
       } catch (e: unknown) {
@@ -100,13 +110,6 @@ export default class TerminalUI {
   // 清屏
   clear(): void {
     console.clear()
-  }
-
-  // 显示欢迎信息
-  showWelcome(): void {
-    clack.intro("🤖 LZY Agent CLI v1.0.0")
-    clack.log.info("输入 /help 查看所有可用命令")
-    clack.log.info("开始和Agent对话吧！\n")
   }
 
   // 关闭终端
