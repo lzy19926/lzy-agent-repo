@@ -1,20 +1,31 @@
 # 🤖 LZY Agent CLI
 
-原生TypeScript开发的极简Agent构建框架 , Agent CLI 工具，支持多Agent切换、多Agent通信, 技能扩展、工具调用和持久化记忆。
+原生TypeScript开发的极简Agent构建框架 , Agent CLI 工具，支持多Agent切换、多Agent通信、技能扩展、工具调用、持久化记忆和终端Markdown渲染。
 
 ## ✨ 功能特性
 
 - ✅ 终端多轮对话，基于 [@clack/prompts](https://github.com/natemoo-re/clack) 打造优雅交互体验
+- ✅ 终端Markdown渲染，支持显示格式化的文本、代码块、列表等内容
 - ✅ 自定义技能系统，自动扫描全局/项目/插件目录下的技能，轻松扩展功能
-- ✅ 系统工具支持，内置PowerShell/Bash/WebSearch/消息转发等工具，可直接调用系统能力
+- ✅ 系统工具支持，内置PowerShell/Bash/WebSearch/消息转发/Agent信息查询等工具，可直接调用系统能力
 - ✅ 多Agent架构，支持不同角色的专业Agent切换，每个Agent拥有独立记忆
 - ✅ 多Agent通信，Agent之间可以互相发送消息、委托任务，支持灵活的多Agent协作
 - ✅ 分层上下文记忆，短期记忆支持持久化到本地文件，会话永不丢失
 - ✅ 原生对接LLM大模型，默认支持字节跳动DeepSeek系列，可扩展其他兼容OpenAI接口的模型
-- ✅ 内置多种实用命令，支持Agent切换、技能管理等操作
+- ✅ 内置多种实用命令，支持交互式Agent切换、技能管理等操作，输入`/`键自动弹出命令列表
+- ✅ 事件总线和命令总线架构，模块解耦清晰，易于扩展和维护
 - ✅ 完全TypeScript编写，类型安全，易于维护和扩展
 
 ## 🚀 安装使用
+
+### 全局安装（推荐）
+```bash
+# 从npm安装
+npm install -g @lzy19926/agent-repo
+
+# 直接运行
+lzy-agent
+```
 
 ### 本地运行
 ```bash
@@ -35,13 +46,12 @@ npm run dev
 
 | 命令 | 说明 |
 |------|------|
+| `/` | 输入/键自动弹出所有可用命令的交互式选择列表 |
 | `/help` | 查看帮助信息 |
 | `/exit` | 退出程序 |
 | `/clear` | 清屏并清空当前会话上下文 |
-| `/agents` | 查看所有可用的Agent |
-| `/use <agent-name>` | 切换到指定Agent |
-| `/skills` | 查看当前Agent可用的技能 |
-| `/tools` | 查看所有可用的系统工具 |
+| `/agents` | 查看所有可用的Agent，并进行交互式切换 |
+| `/skills` | 查看当前Agent可用的技能，并进行交互式加载切换 |
 
 ## 🛠️ 自定义技能
 
@@ -100,7 +110,14 @@ toolsManager.register(YourTool, YourToolDefinition)
 ├── src/
 │   ├── agents/           # Agent实现目录
 │   │   ├── Agent.ts      # 基础Agent类
-│   │   └── AgentLoop.ts  # Agent思考循环核心逻辑
+│   │   ├── AgentLoop.ts  # Agent思考循环核心逻辑
+│   │   ├── Chat.ts       # 聊天会话管理
+│   │   └── Messages.ts   # 消息对象定义
+│   ├── bus/              # 总线模块
+│   │   ├── EventBus.ts   # 事件总线，实现模块间事件通信
+│   │   └── CommandBus.ts # 命令总线，实现跨模块命令调用
+│   ├── constant/         # 常量定义
+│   │   └── terminal.ts   # 终端相关常量
 │   ├── core/             # 核心模块
 │   │   ├── AgentManager.ts # Agent管理器，负责Agent注册、切换
 │   │   ├── ShortTurnMemory.ts # 短期记忆管理器，支持持久化
@@ -108,6 +125,9 @@ toolsManager.register(YourTool, YourToolDefinition)
 │   │   └── ToolsManager.ts # 工具管理器，统一管理系统工具
 │   ├── terminal/         # 终端交互模块
 │   │   ├── TerminalUI.ts # 终端UI渲染和用户输入处理
+│   │   ├── TerminalMD.ts # 终端Markdown渲染
+│   │   ├── TerminalScreen.ts # 终端屏幕管理
+│   │   ├── TerminalState.ts # 终端状态管理
 │   │   └── CommandExecuter.ts # 系统命令解析和执行
 │   ├── tools/            # 系统工具实现目录
 │   │   ├── PowerShellTool.ts # PowerShell命令执行工具
@@ -117,7 +137,6 @@ toolsManager.register(YourTool, YourToolDefinition)
 │   │   └── GetAgentInfoTool.ts # Agent信息查询工具
 │   ├── types/            # TypeScript类型定义
 │   ├── utils/            # 工具函数
-│   ├── bus/              # 事件总线（可选）
 │   └── index.ts          # 程序主入口
 
 ├── dist/                 # TypeScript编译输出目录（自动生成）
