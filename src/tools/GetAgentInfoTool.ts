@@ -54,5 +54,4 @@ async function executeGetAgentInfoTool(
   }
 }
 
-export const GetAgentInfoToolDefinition = definition
 export const GetAgentInfoTool = buildTool(definition, executeGetAgentInfoTool)

@@ -120,5 +120,4 @@ const executeBashTool = async (
   }
 }
 
-export const BashToolDefinition = definition
 export const BashTool = buildTool(definition, executeBashTool)

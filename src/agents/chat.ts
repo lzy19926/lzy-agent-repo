@@ -17,6 +17,7 @@ const call_OpenAI = async (
   const openai = new OpenAI({ apiKey, baseURL })
   const historyMessages = context.messages.map((msg) => messageToLLM_OpenAI(msg))
 
+  // 这里使用completionsAPI(完全控制状态) 比responseAPI(服务端存储状态)快
   const response = await openai.chat.completions.create({
     model: model.name,
     messages: [...historyMessages],

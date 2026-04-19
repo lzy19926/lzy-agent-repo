@@ -82,5 +82,4 @@ async function executeSendMessageTool(
   }
 }
 
-export const SendMessageToolDefinition = definition
 export const SendMessageTool = buildTool(definition, executeSendMessageTool)

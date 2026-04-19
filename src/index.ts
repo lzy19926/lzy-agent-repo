@@ -1,20 +1,11 @@
 import "dotenv/config"
 import ShortTurnMemory from "./core/ShortTurnMemory"
 import SkillManager from "./core/SkillManager"
-import {
-  PowerShellTool,
-  PowerShellToolDefinition,
-} from "./tools/PowerShellTool"
-import { BashTool, BashToolDefinition } from "./tools/BashTool"
-import { WebSearchTool, WebSearchToolDefinition } from "./tools/WebSearchTool"
-import {
-  SendMessageTool,
-  SendMessageToolDefinition,
-} from "./tools/SendMessageTool"
-import {
-  GetAgentInfoTool,
-  GetAgentInfoToolDefinition,
-} from "./tools/GetAgentInfoTool"
+import { PowerShellTool } from "./tools/PowerShellTool"
+import { BashTool } from "./tools/BashTool"
+import { WebSearchTool } from "./tools/WebSearchTool"
+import { SendMessageTool } from "./tools/SendMessageTool"
+import { GetAgentInfoTool } from "./tools/GetAgentInfoTool"
 import ToolsManager from "./core/ToolsManager"
 import TerminalUI from "./terminal/TerminalUI"
 import CommandExecuter from "./terminal/CommandExecuter"
@@ -58,11 +49,11 @@ const skillManager = new SkillManager()
 
 // 工具管理器 - 统一管理所有系统工具，自动注入到Agent中
 const toolsManager = new ToolsManager()
-  .register(PowerShellTool, PowerShellToolDefinition)
-  .register(BashTool, BashToolDefinition)
-  .register(WebSearchTool, WebSearchToolDefinition)
-  .register(SendMessageTool, SendMessageToolDefinition)
-  .register(GetAgentInfoTool, GetAgentInfoToolDefinition)
+  .register(PowerShellTool)
+  .register(BashTool)
+  .register(WebSearchTool)
+  .register(SendMessageTool)
+  .register(GetAgentInfoTool)
 
 // 默认模型配置 - 请根据实际使用的大模型参数修改
 const DEFAULT_MODEL: Model = {

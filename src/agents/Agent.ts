@@ -158,7 +158,6 @@ export default class Agent {
     const loopConfig = {
       systemPrompt: this.buildSystemPrompt(),
       tools: this.toolsManager.getTools(),
-      toolDefinitions: this.toolsManager.getToolDefinitions(),
       model: this.model,
       maxTurns: 5,
     }

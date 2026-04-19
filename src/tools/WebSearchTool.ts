@@ -185,5 +185,4 @@ const executeWebSearchTool = async (
   }
 }
 
-export const WebSearchToolDefinition = definition
 export const WebSearchTool = buildTool(definition, executeWebSearchTool)

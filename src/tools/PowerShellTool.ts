@@ -123,5 +123,4 @@ const executePowerShellTool = async (
   }
 }
 
-export const PowerShellToolDefinition = definition
 export const PowerShellTool = buildTool(definition, executePowerShellTool)

@@ -19,7 +19,7 @@ export async function runAgentLoop(
   const context: Context = {
     systemPrompt: config.systemPrompt,
     messages: [...messages],
-    tools: config.toolDefinitions,
+    tools: config.tools?.map((tool) => tool.definition),
   }
 
   for (let turn = 0; turn < maxTurns; turn++) {
