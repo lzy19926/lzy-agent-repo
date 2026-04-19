@@ -19,10 +19,6 @@ export default class CommandExecuter {
   constructor(options: CommandExecuterOptions = {} as CommandExecuterOptions) {
     this.terminalUI = options.terminalUI
     this.commands = {
-      "/": {
-        description: "选择命令并执行",
-        execute: this.listCommands.bind(this),
-      },
       "/help": {
         description: "查看帮助信息",
         execute: this.showHelp.bind(this),
@@ -45,10 +41,33 @@ export default class CommandExecuter {
       },
     }
 
-    process.on("SIGINT", () => {
-      eventBus.publish("event:app:exit")
-      this.terminalUI.close()
-      process.exit(0)
+    // 初始化键盘事件监听
+    this.setupKeyboardListeners()
+  }
+
+  /**
+   * 设置键盘事件监听
+   */
+  private setupKeyboardListeners(): void {
+    process.stdin.on("data", (data) => {
+      const key = data.toString("binary")
+
+      // ctrl+c esc时执行数据清理
+      if (key === "\u0003" || key === "\x1b") {
+        eventBus.publish("event:app:exit")
+        this.terminalUI.close()
+        setTimeout(() => process.exit(0), 100)
+      }
+
+      // 当用户输入 / 键时，自动显示命令列表
+      if (key === "/") {
+        // 完全清空当前输入行，清除缓冲区残留,阻止键入/
+        process.stdout.write("\r\x1b[K")
+        this.listCommands().catch((e) => {
+          const error = e as Error
+          this.terminalUI.printError(`显示命令列表失败: ${error.message}`)
+        })
+      }
     })
   }
 
@@ -67,6 +86,9 @@ export default class CommandExecuter {
 
   // 解析并执行命令
   async executeCommand(input: string): Promise<boolean> {
+    // 过滤/基础命令
+    if (input === "/") return true
+
     const parts = input.split(" ")
     const cmd = parts[0]
     const args = parts.slice(1)
@@ -102,7 +124,7 @@ export default class CommandExecuter {
     // 发布退出事件，通知外部处理清理工作
     eventBus.publish("event:app:exit")
     this.terminalUI.close()
-    process.exit(0)
+    setTimeout(() => process.exit(0), 100)
   }
 
   clear(): void {

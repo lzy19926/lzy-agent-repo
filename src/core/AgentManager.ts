@@ -27,9 +27,9 @@ class AgentManager {
   private subscribeAllEvents() {
     // 订阅应用退出事件
     eventBus.subscribe("event:app:exit", () => {
-      // 退出前flush当前Agent记忆
+      // 退出前清除当前Agent记忆
       const currentAgent = this.getCurrentAgent()
-      currentAgent.memory.flush()
+      currentAgent.memory.clear()
     })
 
     // 订阅会话清空事件
