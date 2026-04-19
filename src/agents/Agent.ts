@@ -6,24 +6,6 @@ import eventBus from "../bus/EventBus"
 import { buildSystemMessage } from "./Messages"
 import type { Message, SkillMeta, Model } from "../types/types"
 
-interface ReplyThought {
-  action: "reply"
-  content: string
-}
-
-interface CallSkillThought {
-  action: "call_skill"
-  skill: string
-  params: Record<string, unknown>
-}
-
-interface ExecuteCodeThought {
-  action: "execute_code"
-  code: string
-}
-
-export type Thought = ReplyThought | CallSkillThought | ExecuteCodeThought
-
 export interface AgentOptions {
   name?: string
   description?: string

@@ -117,6 +117,7 @@ toolsManager.register(YourTool, YourToolDefinition)
 │   │   ├── EventBus.ts   # 事件总线，实现模块间事件通信
 │   │   └── CommandBus.ts # 命令总线，实现跨模块命令调用
 │   ├── constant/         # 常量定义
+│   │   └── bus.ts        # 总线相关常量 events与commands
 │   │   └── terminal.ts   # 终端相关常量
 │   ├── core/             # 核心模块
 │   │   ├── AgentManager.ts # Agent管理器，负责Agent注册、切换
