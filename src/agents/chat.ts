@@ -2,63 +2,28 @@
  * 极简LLM交互实现，仅使用fetch进行API调用
  */
 import type { Model, Context, AgentMessage } from "../types/types"
+import { messageToLLM } from "./Messages"
 import OpenAI from "openai"
 
-/**
- * 调用LLM API获取完整响应（非流式）
- * @param model 模型配置
- * @param context 对话上下文
- * @param options 可选配置（API Key、中断信号等）
- */
-export async function callLLM(
+const call_OpenAI = async (
   model: Model,
   context: Context,
   options?: { signal?: AbortSignal }
-): Promise<AgentMessage> {
+): Promise<AgentMessage> => {
   const baseURL = model.baseURL || ""
   const apiKey = model?.apiKey || ""
   const tools = context.tools || []
 
-  const call_OpenAI = async () => {
-    const openai = new OpenAI({ apiKey, baseURL })
-    const historyMessages = context.messages.map((msg) => {
-      if (msg.role === "system") {
-        return {
-          role: "system",
-          content: msg.content.map((c: any) => c.text).join(""),
-        }
-      }
-      if (msg.role === "user") {
-        return {
-          role: "user",
-          content: msg.content.map((c: any) => c.text).join(""),
-        }
-      }
-      if (msg.role === "assistant") {
-        return {
-          role: "assistant",
-          content: msg.content.map((c: any) => c.text).join(""),
-        }
-      }
-      if (msg.role === "toolResult") {
-        return {
-          role: "tool",
-          tool_call_id: msg.toolCallId,
-          content: msg.content.map((c: any) => c.text).join(""),
-        }
-      }
-      msg
-    })
+  const openai = new OpenAI({ apiKey, baseURL })
+  const historyMessages = context.messages.map((msg) => messageToLLM(msg))
 
-    return await openai.chat.completions.create({
-      model: model.name,
-      //@ts-ignore
-      messages: [...historyMessages],
-      tools: tools,
-    })
-  }
+  const response = await openai.chat.completions.create({
+    model: model.name,
+    //@ts-ignore
+    messages: [...historyMessages],
+    tools: tools,
+  })
 
-  const response = await call_OpenAI()
   const choice = response.choices[0]
 
   // 转换为标准AssistantMessage格式
@@ -77,4 +42,21 @@ export async function callLLM(
     model: response.model,
     timestamp: Date.now(),
   } as any
+}
+
+/**
+ * 调用LLM API获取完整响应（非流式）
+ * @param model 模型配置
+ * @param context 对话上下文
+ * @param options 可选配置（API Key、中断信号等）
+ */
+export async function callLLM(
+  model: Model,
+  context: Context,
+  options?: { signal?: AbortSignal }
+): Promise<AgentMessage> {
+  //TODO 各API接口兼容层
+  const message = await call_OpenAI(model, context, options)
+
+  return message
 }

@@ -2,6 +2,7 @@ import type ShortTurnMemory from "../core/ShortTurnMemory"
 import type SkillManager from "../core/SkillManager"
 import type ToolsManager from "../core/ToolsManager"
 import { runAgentLoop } from "./AgentLoop"
+import { buildUserMessage, buildSystemMessage } from "./Messages"
 import type { Message, SkillMeta, Model } from "../types/types"
 
 interface ReplyThought {
@@ -61,13 +62,7 @@ export default class Agent {
     if (this._ready) return
     const systemPrompt = this.buildSystemPrompt()
 
-    this.memory.addMessages([
-      {
-        role: "system",
-        content: [{ type: "text", text: systemPrompt }],
-        timestamp: Date.now(),
-      },
-    ])
+    this.memory.addMessages([buildSystemMessage(systemPrompt)])
 
     this._ready = true
   }
@@ -108,17 +103,10 @@ export default class Agent {
     const skill = this.skillManager.getSkill(skillName)
     if (!skill) return false
 
-    // 构造技能系统消息
-    const skillSystemMessage: Message = {
-      role: "system",
-      content: [
-        {
-          type: "text",
-          text: this.skillManager.generateLoadedSkillPrompt(skillName),
-        },
-      ],
-      timestamp: Date.now(),
-    }
+    // 构造技能系统消息并添加到记忆上下文
+    const skillSkillPrompt =
+      this.skillManager.generateLoadedSkillPrompt(skillName)
+    const skillSystemMessage = buildSystemMessage(skillSkillPrompt)
 
     // 添加到记忆上下文
     this.memory.addMessages([skillSystemMessage])
@@ -152,13 +140,7 @@ export default class Agent {
    */
   async chat(userInput: string, signal?: AbortSignal): Promise<string> {
     // 1. 保存用户消息到上下文
-    this.memory.addMessages([
-      {
-        role: "user",
-        content: [{ type: "text", text: userInput }],
-        timestamp: Date.now(),
-      },
-    ])
+    this.memory.addMessages([buildUserMessage(userInput)])
 
     // 2. 调用AgentLoop执行对话，传入当前所有上下文消息
     const loopConfig = {
