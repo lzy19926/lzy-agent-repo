@@ -39,7 +39,11 @@ export default class ShortTurnMemory {
       const memoryBaseDir = path.join(process.cwd(), "./.lzyAgentCli/memory")
       if (options.id) {
         // 按id隔离路径
-        this.persistPath = path.join(memoryBaseDir, options.id, "short_term_memory.jsonl")
+        this.persistPath = path.join(
+          memoryBaseDir,
+          options.id,
+          "short_term_memory.jsonl"
+        )
       } else {
         // 全局默认路径
         this.persistPath = path.join(memoryBaseDir, "short_term_memory.jsonl")
@@ -59,9 +63,13 @@ export default class ShortTurnMemory {
    * 超过最大长度时自动删除最早的消息
    * 防抖批量持久化到磁盘，优化写入性能
    */
-  addMessages(messages: Message[]): void {
-    // 批量添加所有消息
-    this.messages.push(...messages)
+  addMessages(messages: Message | Message[]): void {
+    // 添加消息
+    if (Array.isArray(messages)) {
+      this.messages.push(...messages)
+    } else {
+      this.messages.push(messages)
+    }
 
     // 超过最大长度，删除最早的消息
     if (this.messages.length > this.maxLength) {
@@ -96,7 +104,6 @@ export default class ShortTurnMemory {
 
   /**
    * 获取所有记忆消息
-   * 返回深拷贝，防止外部修改内部数据
    */
   getMessages(): Message[] {
     return this.messages

@@ -2,6 +2,8 @@
  * Minimal agent loop implementation
  */
 import type { AgentLoopConfig, Context, Message } from "../types/types"
+import { ToolExecutionType } from "../types/types"
+import { lockExec } from "../utils/lock"
 import { callLLM } from "./Chat"
 import eventBus from "../bus/EventBus"
 import { EVENT } from "../constant/bus"
@@ -42,14 +44,16 @@ export async function runAgentLoop(
       toolCalls: toolCalls.map((c) => c.name),
     })
 
-    // Execute tools sequentially
     for (const toolCall of toolCalls) {
       const tool = config.tools?.find((t) => t.name === toolCall.name)
       if (!tool) continue
 
       try {
-        // Validate and execute tool
-        const result = await tool.execute?.(toolCall.arguments)
+        // 可并行执行的任务直接执行，必须串行执行的任务全局锁机制保证顺序执行
+        const result =
+          tool.executionType === ToolExecutionType.PARALLEL
+            ? await tool.execute?.(toolCall.arguments)
+            : await lockExec(() => tool.execute?.(toolCall.arguments))
 
         context.messages.push({
           role: "toolResult",

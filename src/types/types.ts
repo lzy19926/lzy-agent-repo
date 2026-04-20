@@ -1,5 +1,4 @@
 import OpenAI from "openai"
-
 // 模型配置
 export interface Model {
   provider?: string
@@ -78,13 +77,18 @@ export type Message =
 
 // 工具执行类型
 export enum ToolExecutionType {
-  PARALLEL = "parallel", // 可并行执行
-  SEQUENTIAL = "sequential" // 必须串行执行
+  /**可并行执行*/
+  PARALLEL = "parallel",
+  /**必须串行执行*/
+  SEQUENTIAL = "sequential",
 }
 
 // 工具参数定义
 export type ToolParameter = { [key: string]: unknown }
-export type ToolExecuter<T = any> = (input: T, signal?: AbortSignal) => Promise<ToolResult>
+export type ToolExecuter<T = any> = (
+  input: T,
+  signal?: AbortSignal
+) => Promise<ToolResult>
 
 // 统一工具接口，所有工具都要实现此接口
 export interface AgentTool {
